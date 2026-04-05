@@ -1,0 +1,568 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700;800&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .readme {
+    font-family: 'DM Mono', monospace;
+    color: var(--color-text-primary);
+    padding: 2rem 0 3rem;
+    max-width: 860px;
+  }
+
+  .hero {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 2.5rem 2rem 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background-image:
+      linear-gradient(var(--color-text-primary) 0.5px, transparent 0.5px),
+      linear-gradient(90deg, var(--color-text-primary) 0.5px, transparent 0.5px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+
+  .hero-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-tertiary);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .hero-title span {
+    color: var(--color-text-secondary);
+  }
+
+  .hero-subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.75rem;
+    max-width: 520px;
+  }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 0.5px solid var(--color-border-secondary);
+    color: var(--color-text-secondary);
+    background: var(--color-background-secondary);
+    letter-spacing: 0.04em;
+  }
+
+  .badge.accent {
+    border-color: #378ADD44;
+    color: #185FA5;
+    background: #E6F1FB;
+  }
+
+  .wave-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 1.5rem 0 0;
+    opacity: 0.35;
+  }
+
+  .wave-bar {
+    width: 3px;
+    background: var(--color-text-primary);
+    border-radius: 2px;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+  }
+
+  .section {
+    margin-bottom: 2rem;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .section-heading {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.6rem;
+  }
+
+  .prose {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 300;
+    line-height: 1.75;
+    color: var(--color-text-secondary);
+  }
+
+  .prose code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--color-text-primary);
+  }
+
+  .code-block {
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    padding: 1.25rem 1.5rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+
+  .code-block pre {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: var(--color-text-primary);
+    white-space: pre;
+  }
+
+  .kw { color: #185FA5; }
+  .ty { color: #3B6D11; }
+  .st { color: #854F0B; }
+  .cm { color: var(--color-text-tertiary); font-style: italic; }
+  .fn-name { color: #993556; }
+  .num { color: #3B6D11; }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+    margin-top: 0.75rem;
+  }
+
+  .feature-card {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    padding: 1rem 1.25rem;
+    background: var(--color-background-primary);
+  }
+
+  .feature-icon {
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-tertiary);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .feature-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .feature-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--color-text-secondary);
+    line-height: 1.55;
+  }
+
+  .phase-list {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .phase-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 8px 12px;
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+  }
+
+  .phase-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--color-text-tertiary);
+    min-width: 64px;
+    text-transform: uppercase;
+  }
+
+  .phase-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--color-text-primary);
+    flex: 1;
+  }
+
+  .phase-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+  }
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 0.75rem;
+  }
+
+  .ref-card {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    padding: 0.75rem 1rem;
+    background: var(--color-background-primary);
+  }
+
+  .ref-lang {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    margin-bottom: 3px;
+  }
+
+  .ref-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 2px;
+  }
+
+  .ref-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+
+  .divider {
+    border: none;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    margin: 2rem 0;
+  }
+
+  .install-block {
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-left: 2.5px solid #378ADD;
+    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+  }
+
+  .install-block pre {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    line-height: 1.6;
+  }
+
+  .footer-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--color-text-tertiary);
+    line-height: 1.6;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 0.5px solid var(--color-border-tertiary);
+  }
+</style>
+
+<div class="readme">
+
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-tag">github.com/oxur/minilogue-xd</div>
+    <div class="hero-title">minilogue<span>-xd</span></div>
+    <div class="hero-subtitle">
+      A complete Rust library for the Korg Minilogue XD synthesizer —
+      full MIDI implementation coverage: CC, NRPN, SysEx, program blobs,
+      sequencer data, tuning tables, and user module management.
+    </div>
+    <div class="badge-row">
+      <span class="badge accent">Rust 2021</span>
+      <span class="badge">MIDI impl rev 1.01</span>
+      <span class="badge">100% spec coverage</span>
+      <span class="badge">no_std compatible</span>
+      <span class="badge">MIT / Apache-2.0</span>
+    </div>
+    <div class="wave-row">
+      <div class="wave-bar" style="height: 8px; animation-delay: 0.0s;"></div>
+      <div class="wave-bar" style="height: 16px; animation-delay: 0.1s;"></div>
+      <div class="wave-bar" style="height: 10px; animation-delay: 0.2s;"></div>
+      <div class="wave-bar" style="height: 22px; animation-delay: 0.3s;"></div>
+      <div class="wave-bar" style="height: 12px; animation-delay: 0.4s;"></div>
+      <div class="wave-bar" style="height: 18px; animation-delay: 0.5s;"></div>
+      <div class="wave-bar" style="height: 8px; animation-delay: 0.6s;"></div>
+      <div class="wave-bar" style="height: 14px; animation-delay: 0.7s;"></div>
+      <div class="wave-bar" style="height: 20px; animation-delay: 0.8s;"></div>
+      <div class="wave-bar" style="height: 9px; animation-delay: 0.9s;"></div>
+      <div class="wave-bar" style="height: 16px; animation-delay: 1.0s;"></div>
+      <div class="wave-bar" style="height: 11px; animation-delay: 1.1s;"></div>
+      <div class="wave-bar" style="height: 24px; animation-delay: 1.2s;"></div>
+      <div class="wave-bar" style="height: 8px; animation-delay: 1.3s;"></div>
+      <div class="wave-bar" style="height: 13px; animation-delay: 1.4s;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">What is this</div>
+    <p class="prose">
+      The Minilogue XD exposes a remarkably deep MIDI surface: 50+ CC parameters,
+      29 NRPN parameters, a 1024-byte program blob containing the full synth state,
+      a 16-step sequencer with 4-slot motion sequences, sub-cent tuning tables for
+      all 128 notes, and a complete user module management protocol for logue SDK units.
+      <br><br>
+      This library covers all of it — with typed Rust APIs, correct 10-bit encoding,
+      the Korg 7-bit SysEx codec, and file format support for <code>.mnlgxdprog</code>,
+      <code>.mnlgxdlib</code>, and <code>.mnlgxdunit</code> archives.
+      <br><br>
+      The dream: treat the XD desktop module as a voice in an imaginary MIDI-based
+      Eurorack system, with every parameter reachable from Rust in real time.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Install</div>
+    <div class="install-block">
+      <pre><span class="cm"># Cargo.toml</span>
+[dependencies]
+minilogue-xd = "0.1"</pre>
+    </div>
+    <p class="prose">
+      Requires Rust 2021 edition. The <code>midi-io</code> feature (default on) pulls in
+      <code>midir</code> for live MIDI port access. Disable it for pure file manipulation
+      or <code>no_std</code> targets.
+    </p>
+    <div class="install-block" style="margin-top: 0.75rem;">
+      <pre><span class="cm"># no_std / file-only build</span>
+minilogue-xd = { version = "0.1", default-features = false, features = ["file-formats"] }</pre>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Quick start</div>
+    <div class="code-block">
+      <pre><span class="kw">use</span> minilogue_xd::{
+    controller::<span class="ty">RealtimeController</span>,
+    param::enums::{<span class="ty">VcoWave</span>, <span class="ty">LfoMode</span>, <span class="ty">EgTarget</span>},
+    transport::<span class="ty">MidirOutput</span>,
+};
+
+<span class="kw">fn</span> <span class="fn-name">main</span>() -> minilogue_xd::<span class="ty">Result</span>&lt;()&gt; {
+    <span class="kw">let</span> output = <span class="ty">MidirOutput</span>::<span class="fn-name">connect</span>(<span class="st">"minilogue xd"</span>, <span class="num">0</span>)?;
+    <span class="kw">let</span> <span class="kw">mut</span> xd = <span class="ty">RealtimeController</span>::<span class="fn-name">new</span>(output, <span class="num">0</span>);
+
+    <span class="cm">// VCO control — natural units, typed enums</span>
+    xd.<span class="fn-name">set_vco1_wave</span>(<span class="ty">VcoWave</span>::Saw)?;
+    xd.<span class="fn-name">set_cutoff</span>(<span class="num">0.6</span>)?;        <span class="cm">// 0.0 – 1.0</span>
+    xd.<span class="fn-name">set_resonance</span>(<span class="num">0.4</span>)?;
+    xd.<span class="fn-name">set_lfo_rate</span>(<span class="num">0.3</span>)?;
+    xd.<span class="fn-name">set_lfo_mode</span>(<span class="ty">LfoMode</span>::Bpm)?;
+    xd.<span class="fn-name">set_eg_target</span>(<span class="ty">EgTarget</span>::Cutoff)?;
+
+    <span class="cm">// NRPN: deep parameters not on the CC surface</span>
+    xd.<span class="fn-name">set_micro_tuning</span>(<span class="ty">MicroTuning</span>::Pythagorean)?;
+    xd.<span class="fn-name">set_bend_range_plus</span>(<span class="num">7</span>)?;
+
+    xd.<span class="fn-name">play_note</span>(<span class="num">60</span>, <span class="num">100</span>)?;   <span class="cm">// middle C, velocity 100</span>
+    <span class="ty">Ok</span>(())
+}</pre>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Patch manipulation</div>
+    <div class="code-block">
+      <pre><span class="kw">use</span> minilogue_xd::{
+    builder::{<span class="ty">PatchBuilder</span>, <span class="ty">SequenceBuilder</span>},
+    sysex::{<span class="ty">GlobalParams</span>, transaction::<span class="ty">SysexTransaction</span>},
+    param::enums::<span class="ty">DelaySubType</span>,
+};
+
+<span class="cm">// Build a patch programmatically</span>
+<span class="kw">let</span> patch = <span class="ty">PatchBuilder</span>::<span class="fn-name">new</span>()
+    .<span class="fn-name">name</span>(<span class="st">"Acid Bass"</span>)
+    .<span class="fn-name">vco1</span>(<span class="ty">VcoWave</span>::Saw, <span class="ty">VcoOctave</span>::Eight, <span class="num">0.0</span>, <span class="num">0.5</span>)
+    .<span class="fn-name">filter</span>(<span class="num">0.35</span>, <span class="num">0.8</span>, <span class="ty">CutoffDrive</span>::Full, <span class="ty">CutoffKeytrack</span>::Full)
+    .<span class="fn-name">amp_eg</span>(<span class="num">0.0</span>, <span class="num">0.3</span>, <span class="num">0.0</span>, <span class="num">0.1</span>)
+    .<span class="fn-name">delay</span>(<span class="ty">DelaySubType</span>::Tape, <span class="num">0.4</span>, <span class="num">0.6</span>, <span class="num">0.3</span>)
+    .<span class="fn-name">build</span>()?;
+
+<span class="cm">// Send it to the edit buffer over SysEx</span>
+<span class="kw">let</span> <span class="kw">mut</span> tx = <span class="ty">SysexTransaction</span>::<span class="fn-name">new</span>(output, input, channel);
+tx.<span class="fn-name">send_current_program</span>(&patch)?;
+
+<span class="cm">// Load a .mnlgxdlib file from disk</span>
+<span class="kw">let</span> patches = minilogue_xd::<span class="fn-name">load_lib_file</span>(<span class="st">"factory.mnlgxdlib"</span>)?;
+<span class="fn-name">println!</span>(<span class="st">"{} patches loaded"</span>, patches.<span class="fn-name">len</span>());</pre>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Features</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">// cc</div>
+        <div class="feature-title">CC parameter map</div>
+        <div class="feature-desc">All 50+ control change parameters. Typed enums for stepped values. Automatic 10-bit encoding via CC63+CC6 for high-resolution parameters.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">// nrpn</div>
+        <div class="feature-title">NRPN parameters</div>
+        <div class="feature-desc">All 29 NRPN entries: bend range, joystick assign, CV routing, micro-tuning, VPM params, user params, portamento mode, and more.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">// sysex</div>
+        <div class="feature-title">Program &amp; global blobs</div>
+        <div class="feature-desc">Full 1024-byte program data parse/serialize. Global settings. Korg 7-bit codec. Request/response SysEx transactions with ACK/NAK handling.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">// seq</div>
+        <div class="feature-title">Sequencer &amp; motion</div>
+        <div class="feature-desc">16-step sequencer with per-step note/velocity/gate data. 4-slot motion sequences with 5-point interpolation and 45 assignable parameters.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">// tune</div>
+        <div class="feature-title">Micro-tuning</div>
+        <div class="feature-desc">User scale (128 notes, 0.0061-cent precision) and user octave (12 notes) read/write. MIDI Tuning Standard bulk and single-note formats.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">// sdk</div>
+        <div class="feature-title">User module management</div>
+        <div class="feature-desc">Query, upload, download, clear, and swap logue SDK oscillator and FX slots. CRC32-verified payload transfer. .mnlgxdunit file support.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Implementation status</div>
+    <div class="phase-list">
+      <div class="phase-row">
+        <div class="phase-num">Phase 1</div>
+        <div class="phase-name">Foundation — codec, channel messages, MIDI I/O transport</div>
+        <div class="phase-count">6 milestones</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-num">Phase 2</div>
+        <div class="phase-name">Parameter layer — enum types, 10-bit encoding, CC map, NRPN map</div>
+        <div class="phase-count">4 milestones</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-num">Phase 3</div>
+        <div class="phase-name">SysEx layer — program blobs, global data, tuning, user modules, poly chain</div>
+        <div class="phase-count">8 milestones</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-num">Phase 4</div>
+        <div class="phase-name">High-level API — controller, transaction manager, patch &amp; sequence builders</div>
+        <div class="phase-count">6 milestones</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Community references</div>
+    <div class="ref-grid">
+      <div class="ref-card">
+        <div class="ref-lang">C / C++</div>
+        <div class="ref-name">korginc/logue-sdk</div>
+        <div class="ref-desc">Official Korg SDK for onboard DSP units. Reference for user module binary format and CRC32.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-lang">Python</div>
+        <div class="ref-name">gekart/mnlgxd.py</div>
+        <div class="ref-desc">Program blob parser and pretty-printer. Ground truth for TABLE 2 byte offsets.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-lang">Python</div>
+        <div class="ref-name">isnotinvain/minilogue-xd-util</div>
+        <div class="ref-desc">Idiomatic patch object model. Useful for sequencer and motion byte layout validation.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-lang">Python</div>
+        <div class="ref-name">gazzar/loguetools</div>
+        <div class="ref-desc">Cross-synth patch manipulation. Reference for .mnlgxd* file container formats.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Covers Korg Minilogue XD MIDI Implementation Revision 1.01 (2020.02.10).
+    Works with both the keyboard and desktop (module) variants.
+    Not affiliated with Korg Inc.
+    <br><br>
+    Licensed under MIT or Apache-2.0, at your option.
+  </div>
+
+</div>
+
+<script>
+  const bars = document.querySelectorAll('.wave-bar');
+  const heights = [8,16,10,22,12,18,8,14,20,9,16,11,24,8,13];
+  bars.forEach((b, i) => {
+    b.style.height = heights[i] + 'px';
+    b.style.animationDelay = (i * 0.09) + 's';
+    b.style.animationDuration = (1.2 + (i % 3) * 0.2) + 's';
+  });
+</script>
