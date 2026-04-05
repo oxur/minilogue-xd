@@ -1,5 +1,52 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>minilogue-xd</title>
 <style>
+  :root {
+    --color-text-primary: #1f2328;
+    --color-text-secondary: #59636e;
+    --color-text-tertiary: #848d97;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f6f8fa;
+    --color-border-secondary: #d1d9e0;
+    --color-border-tertiary: #d8dee4;
+    --border-radius-md: 6px;
+    --border-radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-text-primary: #e6edf3;
+      --color-text-secondary: #9198a1;
+      --color-text-tertiary: #6e7681;
+      --color-background-primary: #0d1117;
+      --color-background-secondary: #161b22;
+      --color-border-secondary: #30363d;
+      --color-border-tertiary: #21262d;
+    }
+
+    .badge.accent {
+      border-color: #378ADD44;
+      color: #79b8ff;
+      background: #1a3a5c;
+    }
+
+    .kw { color: #79b8ff; }
+    .ty { color: #7ee787; }
+    .st { color: #e3b341; }
+    .fn-name { color: #d2a8ff; }
+    .num { color: #7ee787; }
+  }
+
+  body {
+    background: var(--color-background-primary);
+    display: flex;
+    justify-content: center;
+    padding: 0 1rem;
+  }
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700;800&display=swap');
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -327,7 +374,8 @@
     border-top: 0.5px solid var(--color-border-tertiary);
   }
 </style>
-
+</head>
+<body>
 <div class="readme">
 
   <div class="hero">
@@ -566,3 +614,5 @@ tx.<span class="fn-name">send_current_program</span>(&patch)?;
     b.style.animationDuration = (1.2 + (i % 3) * 0.2) + 's';
   });
 </script>
+</body>
+</html>
