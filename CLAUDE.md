@@ -24,6 +24,7 @@ make docs             # Generate API docs -> target/doc/minilogue-xd/index.html
 ```
 
 Running a single test:
+
 ```bash
 cargo test test_name
 cargo test module::tests::specific_test
@@ -41,6 +42,7 @@ Phase 1 · Foundation          (crate scaffold, 7-bit codec, channel messages, I
 ```
 
 Planned module layout:
+
 - `transport` -- MIDI I/O abstraction (midir backend, MockOutput for tests)
 - `message` -- channel, realtime, common message types
 - `codec` -- Korg 7-bit <-> 8-bit SysEx encoding (NOTE 1 of the spec)
@@ -67,6 +69,7 @@ Feature flags: `midi-io` (default, midir), `file-formats` (default, zip), `std` 
 3. **`assets/ai/CLAUDE-CODE-COVERAGE.md`** -- test coverage guide (95%+ target)
 
 **Important:** `assets/ai/ai-rust` may be a symlink. If it doesn't resolve, clone it:
+
 ```bash
 git clone https://github.com/oxur/ai-rust assets/ai/ai-rust
 ```
@@ -77,6 +80,12 @@ git clone https://github.com/oxur/ai-rust assets/ai/ai-rust
 - Always run `make format` after changes and `make lint` before testing
 - Validate implementations against real `.mnlgxdlib`/`.mnlgxdprog` files and the workbench Python implementations, not just the Korg spec (which has known errata)
 - The `workbench/` directory (gitignored) contains cloned reference implementations for cross-validation
+
+### User Guide
+
+The official Korg product user guide (PDF) for the Minilogue has been converted to Markdown, with images included -- and most importantly, images have all been analysed and annotated with captions for easy AI-reading, here:
+
+- `~/Dropbox/Docs/Korg/Minilogue\ XD/minilogue-xd/book.md`
 
 ### Known Spec Errata
 

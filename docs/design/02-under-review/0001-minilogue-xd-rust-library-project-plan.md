@@ -14,8 +14,8 @@ version: 1.0
 
 # `minilogue-xd` Rust Library — Project Plan
 
-**Repository:** github.com/oxur/minilogue-xd  
-**Goal:** 100% coverage of the Korg Minilogue XD MIDI Implementation (Revision 1.01)  
+**Repository:** github.com/oxur/minilogue-xd
+**Goal:** 100% coverage of the Korg Minilogue XD MIDI Implementation (Revision 1.01)
 **Workbench references:** logue-sdk, mnlgxd.py (gekart gist), minilogue-xd-util (isnotinvain), loguetools (gazzar)
 
 ---
@@ -53,6 +53,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 ### Milestone 1.1 — Crate Scaffold & Workspace Layout
 
 **Deliverables:**
+
 - `Cargo.toml` with workspace structure and initial dependencies (`midir`, `thiserror`, `bitflags`)
 - `src/lib.rs` with module declarations (stubs only)
 - `src/error.rs` — unified `Error` enum and `Result<T>` alias
@@ -69,6 +70,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** NOTE 1 of the MIDI implementation — the bijective encoding between 8-bit data bytes and 7-bit MIDI SysEx bytes. Every 7 bytes of real data become 8 bytes on the wire (high bits packed into a leading byte).
 
 **Deliverables:**
+
 - `src/codec.rs`
   - `encode_7bit(data: &[u8]) -> Vec<u8>` — encodes 8-bit buffer to MIDI 7-bit wire format
   - `decode_7bit(data: &[u8]) -> Result<Vec<u8>>` — decodes wire format back to 8-bit
@@ -87,6 +89,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** Section 1-1 of the implementation — all messages the XD *transmits*.
 
 **Deliverables:**
+
 - `src/message/channel.rs`
   - `NoteOn { channel: u4, key: u7, velocity: u7 }`
   - `NoteOff { channel: u4, key: u7, velocity: u7 }` (fixed velocity 64 on TX)
@@ -108,6 +111,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** Section 2-1 additions not present on transmit side — messages the XD *only receives*.
 
 **Deliverables:**
+
 - Added to `src/message/channel.rs`:
   - `AllSoundOff` (CC 120, value 0)
   - `AllNotesOff` (CC 123, value 0)
@@ -127,10 +131,11 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** Sections 1-2 (TX) and 2-3 (RX) — clock, transport, active sensing, song position pointer.
 
 **Deliverables:**
+
 - `src/message/realtime.rs`
   - `TimingClock`, `Start`, `Continue`, `Stop`, `ActiveSensing` — unit structs with `ToMidiBytes`
 - `src/message/common.rs`
-  - `SongPositionPointer { beats: u14 }` — with decoding note (pppp = (step * step_resolution * 16))
+  - `SongPositionPointer { beats: u14 }` — with decoding note (pppp = (step *step_resolution* 16))
 - Extended `MidiMessage` enum to include realtime and common variants
 - Tests: byte sequences match spec exactly
 
@@ -143,6 +148,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** A thin, testable abstraction over `midir` that the rest of the library uses for sending and receiving messages.
 
 **Deliverables:**
+
 - `src/transport.rs`
   - `trait MidiOutput: Send` with `fn send(&mut self, bytes: &[u8]) -> Result<()>`
   - `trait MidiInput: Send` with callback-based `fn listen<F: FnMut(MidiMessage)>(...)`
@@ -170,6 +176,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** All parameters that use non-linear or discrete value mappings on the CC and program data layers. These are the `*2-xx` notes in Section 1-1 and the `*note Pxx` / `*6-xx` footnotes in Section 2-1.
 
 **Deliverables:**
+
 - `src/param/enums.rs` — one Rust enum per distinct stepped parameter type:
   - `VcoOctave` — 16', 8', 4', 2' (TX: vv=0,42,84,127 / RX: vv ranges 0–31,32–63,64–95,96–127)
   - `VcoWave` — SQR, TRI, SAW
@@ -214,6 +221,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** The `*1-4` / `*5-4` / `*3-1` / `*3-2` / `*3-3` footnotes — the multi-CC encoding schemes for high-resolution parameters.
 
 **Deliverables:**
+
 - `src/param/encoding.rs`
   - `struct TenBitParam(u16)` — wraps a 0–1023 value
     - `fn encode_cc(&self) -> (ControlChange, ControlChange)` — returns (CC63 LSB msg, CC6 MSB msg) in correct send order
@@ -234,6 +242,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** Section 1-1 TX and Section 2-1 RX — all Control Change parameters as a typed, discoverable map.
 
 **Deliverables:**
+
 - `src/param/cc.rs`
   - `CcParam` enum with one variant per CC mapping (50+ variants):
     - Simple continuous: `AmpEgAttack(u7)`, `AmpEgDecay(u7)`, `AmpEgSustain(u7)`, `AmpEgRelease(u7)`, `EgAttack(u7)`, `EgDecay(u7)`, `EgInt(u7)`, `LfoRate(u7)`, `LfoInt(u7)`, `VoiceModeDepth(u7)`, `ModFxTime(u7)`, `ModFxDepth(u7)`, `MultiLevel(u7)`, `Vco1Pitch(u7)`, `Vco2Pitch(u7)`, `Vco1Shape(u7)`, `Vco2Shape(u7)`, `Vco1Level(u7)`, `Vco2Level(u7)`, `CrossModDepth(u7)`, `Cutoff(u7)`, `Resonance(u7)`, `MultiShape(u7)`, `MultiShiftShape(u7)`, `DelayTime(u7)`, `DelayDepth(u7)`, `DelayDryWet(u7)`, `ReverbTime(u7)`, `ReverbDepth(u7)`, `ReverbDryWet(u7)`, `CvIn1(u7)`, `CvIn2(u7)`
@@ -257,6 +266,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** Section `*3` — all Non-Registered Parameter Number parameters.
 
 **Deliverables:**
+
 - `src/param/nrpn.rs`
   - `NrpnParam` enum (one variant per NRPN):
     - Program name chars: `ProgramName1(u7)` .. `ProgramName12(u7)` (ASCII, see note P1)
@@ -294,6 +304,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** The Korg SysEx header format and the ACK/NAK status codes — the wrapper used by all Korg SysEx messages.
 
 **Deliverables:**
+
 - `src/sysex/frame.rs`
   - `const KORG_MANUFACTURER_ID: u8 = 0x42`
   - `const MINILOGUE_XD_FAMILY_ID: u8 = 0x51`
@@ -319,6 +330,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** The Global Data Dump (SysEx function 0x51) — the 63-byte global settings structure.
 
 **Deliverables:**
+
 - `src/sysex/global.rs`
   - `struct GlobalParams` — one field per TABLE 1 entry:
     - `master_tune: i8` (-50..+50 cents)
@@ -359,6 +371,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** The first half of TABLE 2 — the 155 bytes of synth engine parameters. This is the most complex parsing task in the library due to 10-bit fields packed across byte pairs.
 
 **Deliverables:**
+
 - `src/sysex/program/synth.rs`
   - `struct SynthParams` covering TABLE 2 offsets 0–155:
     - Header magic `'PROG'` (bytes 0–3)
@@ -411,6 +424,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** The sequencer portion of TABLE 2 — active steps, BPM, step configuration, step on/off, motion slot assignments, step events, and ARP settings.
 
 **Deliverables:**
+
 - `src/sysex/program/sequencer.rs`
   - `struct SequencerParams`:
     - Header: `'PRED'` (bytes 156–159), `'SQ'` (bytes 160–161, with backward compat note S1)
@@ -453,6 +467,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** Combining SynthParams + SequencerParams into the full program blob, and implementing all program-related SysEx transactions.
 
 **Deliverables:**
+
 - `src/sysex/program/mod.rs`
   - `struct ProgramData { synth: SynthParams, sequencer: SequencerParams }`
   - `fn ProgramData::from_bytes(bytes: &[u8]) -> Result<Self>` — parses full 1024-byte (8-bit) / 1170-byte (7-bit) blob
@@ -481,6 +496,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** Section 2-7 (Bulk Tuning Dump), Section 2-8 (Single Note Tuning Change), SysEx functions 0x14, 0x15, 0x44, 0x45, and TABLEs 3 and 4.
 
 **Deliverables:**
+
 - `src/sysex/tuning.rs`
   - `struct CentOffset(f32)` — a pitch offset in cents, with sub-cent precision via the 14-bit yyzz fraction format (1 unit = 0.0061 cents)
   - `fn encode_cent_offset(cents: f32) -> (u8, u8, u8)` — semitone, fraction MSB, fraction LSB
@@ -510,6 +526,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** SysEx functions 0x17–0x1E and 0x47–0x4A — querying and managing the user oscillator/FX slots (logue SDK units).
 
 **Deliverables:**
+
 - `src/sysex/user_module.rs`
   - `enum UserModuleId` — ModFx (1), DelayFx (2), ReverbFx (3), Osc (4)
   - `struct UserApiVersion { platform_id: u8, major: u8, minor: u8, patch: u8 }`
@@ -543,6 +560,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** SysEx functions 0x60 and 0x61 — the Poly Chain Note On/Off messages used for multi-unit chaining.
 
 **Deliverables:**
+
 - `src/sysex/poly_chain.rs`
   - `struct PolyChainNoteOn { voice_slot: u2, note: u7, velocity: u7, pitch: u21 }` — pitch is 21-bit (hh:mm:ll) for sub-semitone precision
   - `struct PolyChainNoteOff { voice_slot: u2, mute: bool }`
@@ -567,6 +585,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** A fluent API for sending individual parameters to the synth over a live MIDI connection, with correct encoding automatically selected (CC vs NRPN, 7-bit vs 10-bit).
 
 **Deliverables:**
+
 - `src/controller.rs`
   - `struct RealtimeController<O: MidiOutput> { output: O, channel: u4 }`
   - One method per CC parameter, e.g.:
@@ -601,6 +620,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** A stateful layer for managing the request→response pattern of SysEx conversations, with timeout handling and ACK/NAK processing.
 
 **Deliverables:**
+
 - `src/transaction.rs`
   - `struct SysexTransaction<O: MidiOutput> { output: O, channel: u4, timeout: Duration }`
   - `fn request_current_program(&mut self, input: &mut dyn MidiInput) -> Result<ProgramData>`
@@ -627,6 +647,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** A high-level, ergonomic builder for constructing `ProgramData` values without manually setting every field.
 
 **Deliverables:**
+
 - `src/builder/patch.rs`
   - `struct PatchBuilder` with builder-pattern methods:
     - `fn name(self, name: &str) -> Self`
@@ -662,6 +683,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** A high-level builder for constructing `SequencerParams`, including the motion sequence system.
 
 **Deliverables:**
+
 - `src/builder/sequence.rs`
   - `struct SequenceBuilder`:
     - `fn bpm(self, bpm: f32) -> Self` (10.0–300.0)
@@ -689,6 +711,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** End-to-end tests using real data from the workbench clones, ensuring the library handles actual files from the community.
 
 **Deliverables:**
+
 - `tests/integration/` directory (not behind feature flag)
 - Test fixtures from workbench (representative factory patches, a .mnlgxdlib file, a .mnlgxdunit file) — copied to `tests/fixtures/` and committed
 - `tests/integration/round_trip.rs`:
@@ -716,6 +739,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 **Scope:** Final pass for publication quality — no new functionality, only completeness and polish.
 
 **Deliverables:**
+
 - `src/lib.rs` top-level rustdoc: crate overview, architecture diagram (ASCII), quick-start example
 - `CHANGELOG.md` — v0.1.0 entry covering all implemented features
 - `MIDI_COVERAGE.md` — explicit mapping of every item in the MIDI implementation document to the Rust type/function that covers it (the definitive "100% coverage" checklist)
@@ -768,13 +792,21 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 
 ## Cross-Cutting Notes for Claude Code
 
+**User Guide**
+
+The official Korg product user guide (PDF) for the Minilogue has been converted to Markdown, with images included -- and most importantly, images have all been analysed and annotated with captions for easy AI-reading, here:
+
+- `~/Dropbox/Docs/Korg/Minilogue\ XD/minilogue-xd/book.md`
+
 **The workbench is ground truth.** Before implementing any parsing:
+
 - `workbench/logue-sdk` — reference for user module binary format and CRC32 computation
 - `workbench/gekart-mnlgxd.py` — field-by-field program blob parser; cross-check byte offsets
 - `workbench/minilogue-xd-util` — higher-level Python model; useful for sequencer byte layout
 - `workbench/loguetools` — cross-synth patch tool; useful for the .mnlgxd* file container formats
 
 **Known documentation errata** (from KnobKraft Orm community findings):
+
 - The MIDI implementation document has errors in the bank select/program number encoding — test against actual files, not only the spec
 - `.mnlgxdpreset` files from firmware v2.10+ use 448-byte blobs, not the 1024-byte blobs described in the spec
 - The `*note S1` backward-compat path (old 'SEQD' header → new 'SQ' header) must be handled on parse
