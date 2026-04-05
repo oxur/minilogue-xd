@@ -796,7 +796,7 @@ Each phase is broken into milestones. Each milestone is scoped to be executable 
 
 The official Korg product user guide (PDF) for the Minilogue has been converted to Markdown, with images included -- and most importantly, images have all been analysed and annotated with captions for easy AI-reading, here:
 
-- `~/Dropbox/Docs/Korg/Minilogue\ XD/minilogue-xd/book.md`
+- `./docs/korg-user-guide/book.md`
 
 **The workbench is ground truth.** Before implementing any parsing:
 

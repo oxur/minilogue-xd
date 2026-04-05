@@ -85,7 +85,7 @@ git clone https://github.com/oxur/ai-rust assets/ai/ai-rust
 
 The official Korg product user guide (PDF) for the Minilogue has been converted to Markdown, with images included -- and most importantly, images have all been analysed and annotated with captions for easy AI-reading, here:
 
-- `~/Dropbox/Docs/Korg/Minilogue\ XD/minilogue-xd/book.md`
+- `./docs/korg-user-guide/book.md`
 
 ### Known Spec Errata
 
