@@ -82,6 +82,16 @@ pub enum Error {
     #[cfg(feature = "midi-io")]
     #[error("MIDI I/O error: {0}")]
     MidiIo(String),
+
+    /// A file I/O or zip archive error.
+    #[cfg(feature = "file-formats")]
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    /// A zip archive format error.
+    #[cfg(feature = "file-formats")]
+    #[error("zip error: {0}")]
+    Zip(String),
 }
 
 /// Convenience alias used throughout the crate.

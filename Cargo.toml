@@ -12,12 +12,13 @@ categories = ["multimedia::audio", "hardware-support"]
 default = ["midi-io", "file-formats", "std"]
 std = []
 midi-io = ["dep:midir"]
-file-formats = []
+file-formats = ["dep:zip"]
 
 [dependencies]
 thiserror = "2"
 bitflags = "2"
 midir = { version = "0.10", optional = true }
+zip = { version = "2", optional = true, default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 proptest = "1"

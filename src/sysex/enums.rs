@@ -224,6 +224,54 @@ sysex_value_enum! {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Program-blob enums (TABLE 2 — sequencer section)
+// ---------------------------------------------------------------------------
+
+sysex_value_enum! {
+    /// Step sequencer resolution.
+    StepResolution {
+        /// 1/16th note.
+        Sixteenth => { value: 0, display: "1/16" },
+        /// 1/8th note.
+        Eighth => { value: 1, display: "1/8" },
+        /// 1/4 note.
+        Quarter => { value: 2, display: "1/4" },
+        /// 1/2 note.
+        Half => { value: 3, display: "1/2" },
+        /// Whole note.
+        Whole => { value: 4, display: "1/1" },
+    }
+}
+
+sysex_value_enum! {
+    /// Arpeggiator rate division (note S4 of the spec).
+    ArpRate {
+        /// 1/1 (whole note).
+        Full => { value: 0, display: "1/1" },
+        /// 3/4 (dotted half).
+        ThreeQuarter => { value: 1, display: "3/4" },
+        /// 2/3 (triplet half).
+        TwoThird => { value: 2, display: "2/3" },
+        /// 1/2 (half note).
+        Half => { value: 3, display: "1/2" },
+        /// 3/8 (dotted quarter).
+        ThreeEighth => { value: 4, display: "3/8" },
+        /// 1/3 (triplet quarter).
+        OneThird => { value: 5, display: "1/3" },
+        /// 1/4 (quarter note).
+        Quarter => { value: 6, display: "1/4" },
+        /// 3/16 (dotted eighth).
+        ThreeSixteenth => { value: 7, display: "3/16" },
+        /// 1/6 (triplet eighth).
+        OneSixth => { value: 8, display: "1/6" },
+        /// 1/8 (eighth note).
+        Eighth => { value: 9, display: "1/8" },
+        /// 1/12 (triplet sixteenth).
+        OneTwelfth => { value: 10, display: "1/12" },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -422,4 +470,38 @@ mod tests {
     fn velocity_curve_gap_value_9() {
         assert!(VelocityCurve::from_byte(9).is_err());
     }
+
+    // ---------------------------------------------------------------
+    // Sequencer enums
+    // ---------------------------------------------------------------
+
+    test_sysex_enum!(
+        step_resolution,
+        StepResolution,
+        [
+            (StepResolution::Sixteenth, 0, "1/16"),
+            (StepResolution::Eighth, 1, "1/8"),
+            (StepResolution::Quarter, 2, "1/4"),
+            (StepResolution::Half, 3, "1/2"),
+            (StepResolution::Whole, 4, "1/1"),
+        ]
+    );
+
+    test_sysex_enum!(
+        arp_rate,
+        ArpRate,
+        [
+            (ArpRate::Full, 0, "1/1"),
+            (ArpRate::ThreeQuarter, 1, "3/4"),
+            (ArpRate::TwoThird, 2, "2/3"),
+            (ArpRate::Half, 3, "1/2"),
+            (ArpRate::ThreeEighth, 4, "3/8"),
+            (ArpRate::OneThird, 5, "1/3"),
+            (ArpRate::Quarter, 6, "1/4"),
+            (ArpRate::ThreeSixteenth, 7, "3/16"),
+            (ArpRate::OneSixth, 8, "1/6"),
+            (ArpRate::Eighth, 9, "1/8"),
+            (ArpRate::OneTwelfth, 10, "1/12"),
+        ]
+    );
 }
