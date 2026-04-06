@@ -73,6 +73,18 @@ pub enum SysexError {
     /// A user module ID byte was not recognized.
     #[error("invalid user module ID: {0}")]
     InvalidModuleId(u8),
+
+    /// A SysEx transaction timed out waiting for a response.
+    #[error("transaction timed out after {0:?}")]
+    Timeout(std::time::Duration),
+
+    /// The device returned a NAK (error) status code.
+    #[error("device returned error status: {0}")]
+    NakReceived(crate::sysex::frame::SysexStatus),
+
+    /// The response had an unexpected function ID.
+    #[error("unexpected response function ID 0x{0:02X}")]
+    UnexpectedResponse(u8),
 }
 
 /// All errors produced by the minilogue-xd crate.
@@ -246,5 +258,30 @@ mod tests {
         let err: Error = sysex_err.into();
         assert!(matches!(err, Error::Sysex(_)));
         assert!(err.to_string().contains("SysEx error"));
+    }
+
+    #[test]
+    fn sysex_error_display_timeout() {
+        let e = SysexError::Timeout(std::time::Duration::from_secs(5));
+        let msg = e.to_string();
+        assert!(msg.contains("timed out"));
+        assert!(msg.contains("5s"));
+    }
+
+    #[test]
+    fn sysex_error_display_nak_received() {
+        use crate::sysex::frame::SysexStatus;
+        let e = SysexError::NakReceived(SysexStatus::DataFormatError);
+        let msg = e.to_string();
+        assert!(msg.contains("error status"));
+        assert!(msg.contains("Data Format Error"));
+    }
+
+    #[test]
+    fn sysex_error_display_unexpected_response() {
+        let e = SysexError::UnexpectedResponse(0x40);
+        let msg = e.to_string();
+        assert!(msg.contains("unexpected response"));
+        assert!(msg.contains("0x40"));
     }
 }

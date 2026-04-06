@@ -11,6 +11,7 @@ pub mod helpers;
 pub mod identity;
 pub mod poly_chain;
 pub mod program;
+pub mod transaction;
 pub mod tuning;
 pub mod user_module;
 
