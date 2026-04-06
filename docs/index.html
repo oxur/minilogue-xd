@@ -455,6 +455,7 @@
                 <span class="badge accent">Rust 2021</span>
                 <span class="badge">MIDI impl rev 1.01</span>
                 <span class="badge">100% spec coverage</span>
+                <span class="badge">1,127 tests</span>
                 <span class="badge">no_std compatible</span>
                 <span class="badge">MIT / Apache-2.0</span>
             </div>
@@ -518,13 +519,14 @@ minilogue-xd = { version = "0.1", default-features = false, features = ["file-fo
             <div class="code-block">
                 <pre><span class="kw">use</span> minilogue_xd::{
     controller::<span class="ty">RealtimeController</span>,
-    param::enums::{<span class="ty">VcoWave</span>, <span class="ty">LfoMode</span>, <span class="ty">EgTarget</span>},
+    message::{<span class="ty">U4</span>, <span class="ty">U7</span>},
+    param::enums::{<span class="ty">VcoWave</span>, <span class="ty">LfoMode</span>, <span class="ty">EgTarget</span>, <span class="ty">MicroTuning</span>},
     transport::<span class="ty">MidirOutput</span>,
 };
 
 <span class="kw">fn</span> <span class="fn-name">main</span>() -> minilogue_xd::<span class="ty">Result</span>&lt;()&gt; {
-    <span class="kw">let</span> output = <span class="ty">MidirOutput</span>::<span class="fn-name">connect</span>(<span class="st">"minilogue xd"</span>, <span class="num">0</span>)?;
-    <span class="kw">let</span> <span class="kw">mut</span> xd = <span class="ty">RealtimeController</span>::<span class="fn-name">new</span>(output, <span class="num">0</span>);
+    <span class="kw">let</span> output = <span class="ty">MidirOutput</span>::<span class="fn-name">connect</span>(<span class="st">"minilogue xd SOUND"</span>)?;
+    <span class="kw">let</span> <span class="kw">mut</span> xd = <span class="ty">RealtimeController</span>::<span class="fn-name">new</span>(output, <span class="ty">U4</span>::<span class="fn-name">new</span>(<span class="num">0</span>)?);
 
     <span class="cm">// VCO control — natural units, typed enums</span>
     xd.<span class="fn-name">set_vco1_wave</span>(<span class="ty">VcoWave</span>::Saw)?;
@@ -538,7 +540,7 @@ minilogue-xd = { version = "0.1", default-features = false, features = ["file-fo
     xd.<span class="fn-name">set_micro_tuning</span>(<span class="ty">MicroTuning</span>::Pythagorean)?;
     xd.<span class="fn-name">set_bend_range_plus</span>(<span class="num">7</span>)?;
 
-    xd.<span class="fn-name">play_note</span>(<span class="num">60</span>, <span class="num">100</span>)?;   <span class="cm">// middle C, velocity 100</span>
+    xd.<span class="fn-name">play_note</span>(<span class="ty">U7</span>::<span class="fn-name">new</span>(<span class="num">60</span>)?, <span class="ty">U7</span>::<span class="fn-name">new</span>(<span class="num">100</span>)?)?;  <span class="cm">// middle C, velocity 100</span>
     <span class="ty">Ok</span>(())
 }</pre>
             </div>
@@ -548,26 +550,29 @@ minilogue-xd = { version = "0.1", default-features = false, features = ["file-fo
             <div class="section-label">Patch manipulation</div>
             <div class="code-block">
                 <pre><span class="kw">use</span> minilogue_xd::{
-    builder::{<span class="ty">PatchBuilder</span>, <span class="ty">SequenceBuilder</span>},
-    sysex::{<span class="ty">GlobalParams</span>, transaction::<span class="ty">SysexTransaction</span>},
-    param::enums::<span class="ty">DelaySubType</span>,
+    builder::patch::<span class="ty">PatchBuilder</span>,
+    param::enums::{<span class="ty">VcoWave</span>, <span class="ty">VcoOctave</span>, <span class="ty">CutoffDrive</span>,
+        <span class="ty">CutoffKeytrack</span>, <span class="ty">DelaySubType</span>},
+    sysex::transaction::<span class="ty">SysexTransaction</span>,
 };
 
 <span class="cm">// Build a patch programmatically</span>
 <span class="kw">let</span> patch = <span class="ty">PatchBuilder</span>::<span class="fn-name">new</span>()
-    .<span class="fn-name">name</span>(<span class="st">"Acid Bass"</span>)
+    .<span class="fn-name">name</span>(<span class="st">"Acid Bass"</span>)?
     .<span class="fn-name">vco1</span>(<span class="ty">VcoWave</span>::Saw, <span class="ty">VcoOctave</span>::Eight, <span class="num">0.0</span>, <span class="num">0.5</span>)
     .<span class="fn-name">filter</span>(<span class="num">0.35</span>, <span class="num">0.8</span>, <span class="ty">CutoffDrive</span>::Full, <span class="ty">CutoffKeytrack</span>::Full)
     .<span class="fn-name">amp_eg</span>(<span class="num">0.0</span>, <span class="num">0.3</span>, <span class="num">0.0</span>, <span class="num">0.1</span>)
-    .<span class="fn-name">delay</span>(<span class="ty">DelaySubType</span>::Tape, <span class="num">0.4</span>, <span class="num">0.6</span>, <span class="num">0.3</span>)
-    .<span class="fn-name">build</span>()?;
+    .<span class="fn-name">delay</span>(<span class="kw">true</span>, <span class="ty">DelaySubType</span>::Tape, <span class="num">0.4</span>, <span class="num">0.6</span>, <span class="num">0.3</span>)
+    .<span class="fn-name">build</span>();
 
 <span class="cm">// Send it to the edit buffer over SysEx</span>
-<span class="kw">let</span> <span class="kw">mut</span> tx = <span class="ty">SysexTransaction</span>::<span class="fn-name">new</span>(output, input, channel);
+<span class="kw">let</span> <span class="kw">mut</span> tx = <span class="ty">SysexTransaction</span>::<span class="fn-name">new</span>(&<span class="kw">mut</span> output, &<span class="kw">mut</span> input, channel);
 tx.<span class="fn-name">send_current_program</span>(&patch)?;
 
 <span class="cm">// Load a .mnlgxdlib file from disk</span>
-<span class="kw">let</span> patches = minilogue_xd::<span class="fn-name">load_lib_file</span>(<span class="st">"factory.mnlgxdlib"</span>)?;
+<span class="kw">use</span> minilogue_xd::sysex::program::file::<span class="fn-name">read_lib_file</span>;
+<span class="kw">let</span> file = std::fs::<span class="ty">File</span>::<span class="fn-name">open</span>(<span class="st">"factory.mnlgxdlib"</span>)?;
+<span class="kw">let</span> patches = <span class="fn-name">read_lib_file</span>(file)?;
 <span class="fn-name">println!</span>(<span class="st">"{} patches loaded"</span>, patches.<span class="fn-name">len</span>());</pre>
             </div>
         </div>
@@ -609,27 +614,53 @@ tx.<span class="fn-name">send_current_program</span>(&patch)?;
         </div>
 
         <div class="section">
-            <div class="section-label">Implementation status</div>
+            <div class="section-label">Implementation status — complete</div>
             <div class="phase-list">
                 <div class="phase-row">
-                    <div class="phase-num">Phase 1</div>
+                    <div class="phase-num">Phase 1 &#10003;</div>
                     <div class="phase-name">Foundation — codec, channel messages, MIDI I/O transport</div>
-                    <div class="phase-count">6 milestones</div>
+                    <div class="phase-count">6/6 milestones</div>
                 </div>
                 <div class="phase-row">
-                    <div class="phase-num">Phase 2</div>
+                    <div class="phase-num">Phase 2 &#10003;</div>
                     <div class="phase-name">Parameter layer — enum types, 10-bit encoding, CC map, NRPN map</div>
-                    <div class="phase-count">4 milestones</div>
+                    <div class="phase-count">4/4 milestones</div>
                 </div>
                 <div class="phase-row">
-                    <div class="phase-num">Phase 3</div>
+                    <div class="phase-num">Phase 3 &#10003;</div>
                     <div class="phase-name">SysEx layer — program blobs, global data, tuning, user modules, poly chain</div>
-                    <div class="phase-count">8 milestones</div>
+                    <div class="phase-count">8/8 milestones</div>
                 </div>
                 <div class="phase-row">
-                    <div class="phase-num">Phase 4</div>
+                    <div class="phase-num">Phase 4 &#10003;</div>
                     <div class="phase-name">High-level API — controller, transaction manager, patch &amp; sequence builders</div>
-                    <div class="phase-count">6 milestones</div>
+                    <div class="phase-count">6/6 milestones</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-label">Examples</div>
+            <p class="prose">
+                Runnable demos in the
+                <a href="https://github.com/oxur/minilogue-xd/tree/main/crates/minilogue-xd/examples" style="color: inherit;">examples/</a>
+                directory, verified on real hardware:
+            </p>
+            <div class="feature-grid" style="margin-top: 0.75rem;">
+                <div class="feature-card">
+                    <div class="feature-icon">// discover</div>
+                    <div class="feature-title">list_ports</div>
+                    <div class="feature-desc">Enumerate available MIDI output ports. The simplest possible example — connect and query.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">// play</div>
+                    <div class="feature-title">test_drive</div>
+                    <div class="feature-desc">Set up a lush saw+triangle pad with LFO, tape delay, and hall reverb. Plays a Cm9 chord progression.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">// sequence</div>
+                    <div class="feature-title">berlin_school</div>
+                    <div class="feature-desc">Tangerine Dream–style sequencer. Dual detuned saws, evolving filter sweeps, E minor / C minor modulation, velocity fade.</div>
                 </div>
             </div>
         </div>
