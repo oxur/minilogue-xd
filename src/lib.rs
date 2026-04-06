@@ -8,6 +8,7 @@
 pub mod codec;
 pub mod error;
 pub mod message;
+pub mod param;
 
 pub mod connection;
 pub mod transport;

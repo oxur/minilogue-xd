@@ -1,5 +1,6 @@
 # minilogue-xd
 
+[![][build-badge]][build]
 [![Crates.io](https://img.shields.io/crates/v/minilogue-xd)](https://crates.io/crates/minilogue-xd)
 [![Docs.rs](https://img.shields.io/docsrs/minilogue-xd)](https://docs.rs/minilogue-xd)
 [![MIT / Apache-2.0](https://img.shields.io/crates/l/minilogue-xd)](LICENSE-MIT)
@@ -215,7 +216,7 @@ discovered by the community:
 
 ## MIDI implementation version
 
-Covers **Korg Minilogue XD MIDI Implementation Revision 1.01 (2020.02.10)**.  
+Covers **Korg Minilogue XD MIDI Implementation Revision 1.01 (2020.02.10)**.
 Works with both the keyboard variant and the desktop module variant.
 
 ---
@@ -238,3 +239,8 @@ Licensed under either of:
 at your option.
 
 *Not affiliated with Korg Inc.*
+
+[//]: ---Named-Links---
+
+[build]: https://github.com/oxur/minilogue-xd/actions/workflows/ci.yml
+[build-badge]: https://github.com/oxur/minilogue-xd/actions/workflows/ci.yml/badge.svg
