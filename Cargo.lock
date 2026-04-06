@@ -355,6 +355,7 @@ name = "minilogue-xd"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.11.0",
+ "crc32fast",
  "midir",
  "proptest",
  "thiserror",

@@ -9,7 +9,10 @@ pub mod frame;
 pub mod global;
 pub mod helpers;
 pub mod identity;
+pub mod poly_chain;
 pub mod program;
+pub mod tuning;
+pub mod user_module;
 
 /// Korg manufacturer SysEx ID (0x42).
 pub const KORG_ID: u8 = 0x42;

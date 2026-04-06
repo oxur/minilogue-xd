@@ -51,6 +51,28 @@ pub enum SysexError {
     /// A character in a program name was not a valid ASCII printable byte.
     #[error("invalid program name character: 0x{0:02X}")]
     InvalidProgramNameChar(u8),
+
+    /// A CRC32 checksum in the data did not match the computed value.
+    #[error("CRC32 mismatch: expected 0x{expected:08X}, got 0x{actual:08X}")]
+    Crc32Mismatch {
+        /// Expected CRC32 value.
+        expected: u32,
+        /// Actual CRC32 value.
+        actual: u32,
+    },
+
+    /// A slot index was out of range for the given module type.
+    #[error("slot index {slot} out of range for module (max {max})")]
+    InvalidSlotIndex {
+        /// The slot index that was provided.
+        slot: u8,
+        /// The maximum valid slot index (exclusive).
+        max: u8,
+    },
+
+    /// A user module ID byte was not recognized.
+    #[error("invalid user module ID: {0}")]
+    InvalidModuleId(u8),
 }
 
 /// All errors produced by the minilogue-xd crate.
@@ -191,6 +213,31 @@ mod tests {
     fn sysex_error_display_invalid_program_name_char() {
         let e = SysexError::InvalidProgramNameChar(0xFF);
         assert!(e.to_string().contains("0xFF"));
+    }
+
+    #[test]
+    fn sysex_error_display_crc32_mismatch() {
+        let e = SysexError::Crc32Mismatch {
+            expected: 0xDEADBEEF,
+            actual: 0xCAFEBABE,
+        };
+        let msg = e.to_string();
+        assert!(msg.contains("DEADBEEF"));
+        assert!(msg.contains("CAFEBABE"));
+    }
+
+    #[test]
+    fn sysex_error_display_invalid_slot_index() {
+        let e = SysexError::InvalidSlotIndex { slot: 20, max: 16 };
+        let msg = e.to_string();
+        assert!(msg.contains("20"));
+        assert!(msg.contains("16"));
+    }
+
+    #[test]
+    fn sysex_error_display_invalid_module_id() {
+        let e = SysexError::InvalidModuleId(99);
+        assert!(e.to_string().contains("99"));
     }
 
     #[test]
