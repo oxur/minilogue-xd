@@ -9,6 +9,7 @@ pub mod codec;
 pub mod error;
 pub mod message;
 pub mod param;
+pub mod sysex;
 
 pub mod connection;
 pub mod transport;
