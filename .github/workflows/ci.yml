@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "20 4 * * *" # daily at 04:20 UTC
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  # -------------------------------------------------------------------
+  # Lint: format check + clippy (fast, runs once on Ubuntu)
+  # -------------------------------------------------------------------
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (all features)
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Clippy (no default features)
+        run: cargo clippy -p minilogue-xd --no-default-features -- -D warnings
+
+  # -------------------------------------------------------------------
+  # Test: multi-OS matrix, debug + release
+  # -------------------------------------------------------------------
+  test:
+    name: Test (${{ matrix.os }}, ${{ matrix.mode }})
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        mode: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.mode }}
+
+      - name: Test (all features, debug)
+        if: matrix.mode == 'debug'
+        run: cargo test --workspace --all-features
+
+      - name: Test (all features, release)
+        if: matrix.mode == 'release'
+        run: cargo test --workspace --all-features --release
+
+      - name: Test (no default features)
+        if: matrix.mode == 'debug'
+        run: cargo test -p minilogue-xd --no-default-features
+
+      - name: Doc tests
+        if: matrix.mode == 'debug'
+        run: cargo test --workspace --doc
+
+  # -------------------------------------------------------------------
+  # Feature isolation: verify each feature compiles independently
+  # -------------------------------------------------------------------
+  features:
+    name: Feature isolation
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: No default features
+        run: cargo build -p minilogue-xd --no-default-features
+
+      - name: Only std
+        run: cargo build -p minilogue-xd --no-default-features --features std
+
+      - name: Only midi-io
+        run: cargo build -p minilogue-xd --no-default-features --features midi-io
+
+      - name: Only file-formats
+        run: cargo build -p minilogue-xd --no-default-features --features file-formats
+
+      - name: All features
+        run: cargo build -p minilogue-xd --all-features
+
+  # -------------------------------------------------------------------
+  # Docs: verify documentation builds without warnings
+  # -------------------------------------------------------------------
+  docs:
+    name: Documentation
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: "-D warnings"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build docs
+        run: cargo doc --workspace --all-features --no-deps
