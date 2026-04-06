@@ -5,7 +5,9 @@
 //! motion sequences, sub-cent tuning tables, and user module management
 //! for logue SDK units.
 
+pub mod builder;
 pub mod codec;
+pub mod controller;
 pub mod error;
 pub mod message;
 pub mod param;
