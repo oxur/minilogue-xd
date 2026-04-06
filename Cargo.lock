@@ -352,14 +352,14 @@ dependencies = [
 
 [[package]]
 name = "minilogue"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "minilogue-xd",
 ]
 
 [[package]]
 name = "minilogue-xd"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "bitflags 2.11.0",
  "crc32fast",

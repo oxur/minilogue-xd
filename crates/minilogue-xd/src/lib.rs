@@ -80,6 +80,7 @@ pub mod codec;
 pub mod controller;
 pub mod error;
 pub mod message;
+pub mod midi_file;
 pub mod param;
 pub mod sysex;
 

@@ -10,4 +10,4 @@ keywords = ["midi", "synthesizer", "korg", "minilogue", "music"]
 categories = ["multimedia::audio", "hardware-support"]
 
 [dependencies]
-minilogue-xd = { path = "../minilogue-xd", version = "0.1.0" }
+minilogue-xd = { path = "../minilogue-xd", version = "0.2.0" }
