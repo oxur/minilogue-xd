@@ -5,8 +5,8 @@ author: "Claude Code"
 component: All
 tags: [change-me]
 created: 2026-04-05
-updated: 2026-04-05
-state: Under Review
+updated: 2026-04-06
+state: Final
 supersedes: null
 superseded-by: null
 version: 1.0

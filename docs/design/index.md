@@ -6,10 +6,15 @@ This index is automatically generated. Do not edit manually.
 
 | Number | Title | State | Updated |
 |--------|-------|-------|----------|
-| 0001 | `minilogue-xd` Rust Library — Project Plan | Under Review | 2026-04-05 |
+| 0002 | MIDI File Export — Implementation Plan | Active | 2026-04-06 |
+| 0001 | `minilogue-xd` Rust Library — Project Plan | Final | 2026-04-06 |
 
 ## Documents by State
 
-### Under Review
+### Final
 
-- [0001 - `minilogue-xd` Rust Library — Project Plan](02-under-review/0001-minilogue-xd-rust-library-project-plan.md)
+- [0001 - `minilogue-xd` Rust Library — Project Plan](06-final/0001-minilogue-xd-rust-library-project-plan.md)
+
+### Active
+
+- [0002 - MIDI File Export — Implementation Plan](05-active/0002-midi-file-export-implementation-plan.md)
