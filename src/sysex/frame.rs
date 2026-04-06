@@ -264,8 +264,8 @@ pub fn build_status(channel: U4, status: SysexStatus) -> Vec<u8> {
 ///
 /// # Errors
 ///
-/// Returns [`SysexError`](crate::error::SysexError) (wrapped in
-/// [`Error::Sysex`](crate::Error::Sysex)) if the message is malformed.
+/// Returns [`SysexError`] (wrapped in [`crate::Error::Sysex`]) if
+/// the message is malformed.
 pub fn parse_sysex(bytes: &[u8]) -> Result<SysexFrame> {
     // Check minimum length.
     if bytes.len() < MIN_FRAME_LEN {
