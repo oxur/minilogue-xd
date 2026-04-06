@@ -1,4 +1,5 @@
-/// List all available MIDI output ports.
+//! List all available MIDI output ports.
+
 use minilogue_xd::transport::MidirOutput;
 
 fn main() {

@@ -1,7 +1,8 @@
-/// Test drive: connect to the Minilogue XD and play some notes!
-///
-/// This example connects to the synth, tweaks some parameters,
-/// and plays a short sequence to verify everything works.
+//! Test drive: connect to the Minilogue XD and play some notes!
+//!
+//! This example connects to the synth, tweaks some parameters,
+//! and plays a short sequence to verify everything works.
+
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -78,10 +79,10 @@ fn main() -> minilogue_xd::Result<()> {
     // --- Play a Cm9 → Fm7 → Gm7 → Cm progression ---
 
     let progressions: &[(&str, &[u8])] = &[
-        ("Cm9", &[48, 55, 58, 62, 65]),  // C3, G3, Bb3, D4, F4
-        ("Fm7", &[53, 60, 64, 67]),       // F3, C4, Eb4, G4
-        ("Gm7", &[55, 62, 65, 69]),       // G3, D4, F4, A4
-        ("Cm",  &[48, 55, 60, 63]),       // C3, G3, C4, Eb4
+        ("Cm9", &[48, 55, 58, 62, 65]), // C3, G3, Bb3, D4, F4
+        ("Fm7", &[53, 60, 64, 67]),     // F3, C4, Eb4, G4
+        ("Gm7", &[55, 62, 65, 69]),     // G3, D4, F4, A4
+        ("Cm", &[48, 55, 60, 63]),      // C3, G3, C4, Eb4
     ];
 
     for (name, notes) in progressions {
