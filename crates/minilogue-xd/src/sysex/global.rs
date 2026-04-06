@@ -734,13 +734,17 @@ mod tests {
 
     #[test]
     fn build_and_parse_global_dump_custom() {
-        let mut params = GlobalParams::default();
-        params.master_tune = 75;
-        params.brightness = 9;
-        params.metronome = true;
-        params.favorites[0] = FavoriteEntry {
+        let mut favorites = [FavoriteEntry::default(); 16];
+        favorites[0] = FavoriteEntry {
             lower: 42,
             upper: 99,
+        };
+        let params = GlobalParams {
+            master_tune: 75,
+            brightness: 9,
+            metronome: true,
+            favorites,
+            ..GlobalParams::default()
         };
 
         let msg = build_global_dump(ch(0), &params);

@@ -75,8 +75,10 @@ fn complex_patch_round_trip() {
 fn builder_with_custom_sequencer() {
     use minilogue_xd::sysex::program::SequencerParams;
 
-    let mut seq = SequencerParams::default();
-    seq.bpm = 2400; // 240.0 BPM
+    let seq = SequencerParams {
+        bpm: 2400, // 240.0 BPM
+        ..SequencerParams::default()
+    };
 
     let original = PatchBuilder::new()
         .name("FastSeq")

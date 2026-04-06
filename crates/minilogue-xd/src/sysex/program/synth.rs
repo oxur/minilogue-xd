@@ -1025,7 +1025,7 @@ mod tests {
                        // Byte 148: param5_type=1(Bipolar) bits 0-1, param6_type=2(Select) bits 2-3
         buf[148] = 0x01 | (0x02 << 2);
         // Byte 149: param1_type=0, param2_type=1, param3_type=2, param4_type=0
-        buf[149] = 0x00 | (0x01 << 2) | (0x02 << 4) | (0x00 << 6);
+        buf[149] = (0x01 << 2) | (0x02 << 4);
         buf[150] = 13; // program_transpose = 0
         write_10bit(&mut buf, 151, 512); // delay_dry_wet
         write_10bit(&mut buf, 153, 768); // reverb_dry_wet

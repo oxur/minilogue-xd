@@ -464,8 +464,10 @@ mod tests {
 
     #[test]
     fn build_with_sequencer_uses_custom_seq() {
-        let mut seq = SequencerParams::default();
-        seq.bpm = 1400;
+        let seq = SequencerParams {
+            bpm: 1400,
+            ..SequencerParams::default()
+        };
         let data = PatchBuilder::new().build_with_sequencer(seq);
         assert_eq!(data.sequencer.bpm, 1400);
     }

@@ -221,7 +221,7 @@ mod tests {
     fn lib_file_single_program() {
         let data = ProgramData::default();
         let mut buf = Cursor::new(Vec::new());
-        write_lib_file(&mut buf, &[data.clone()]).unwrap();
+        write_lib_file(&mut buf, std::slice::from_ref(&data)).unwrap();
 
         buf.set_position(0);
         let recovered = read_lib_file(&mut buf).unwrap();
