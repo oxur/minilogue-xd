@@ -1,10 +1,11 @@
 [package]
 name = "minilogue-xd"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Rust library for the Korg Minilogue XD synthesizer MIDI implementation"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/oxur/minilogue-xd"
+readme = "../../README.md"
 keywords = ["midi", "synthesizer", "korg", "minilogue", "music"]
 categories = ["multimedia::audio", "hardware-support"]
 
