@@ -351,6 +351,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "minilogue"
+version = "0.1.0"
+dependencies = [
+ "minilogue-xd",
+]
+
+[[package]]
 name = "minilogue-xd"
 version = "0.1.0"
 dependencies = [

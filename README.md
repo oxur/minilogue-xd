@@ -221,6 +221,32 @@ Works with both the keyboard variant and the desktop module variant.
 
 ---
 
+## Examples
+
+The [`examples/`](crates/minilogue-xd/examples/) directory contains runnable demos:
+
+- **[`list_ports`](crates/minilogue-xd/examples/list_ports.rs)** — Enumerate available MIDI output ports
+- **[`test_drive`](crates/minilogue-xd/examples/test_drive.rs)** — Connect to the XD, set up a pad sound, and play a chord progression
+- **[`berlin_school`](crates/minilogue-xd/examples/berlin_school.rs)** — Tangerine Dream–style Berlin School sequencer with evolving filter sweeps, tape echo, key modulation (E minor → C minor → E minor), and velocity fade
+
+Run them with:
+
+```bash
+cargo run -p minilogue-xd --example berlin_school
+```
+
+---
+
+## Workspace structure
+
+```
+crates/
+  minilogue-xd/   — Core library (this crate)
+  minilogue/       — Umbrella crate re-exporting all Minilogue variants
+```
+
+---
+
 ## Contributing
 
 Issues and PRs welcome. The `MIDI_COVERAGE.md` file documents the explicit mapping from

@@ -1,0 +1,12 @@
+[package]
+name = "minilogue"
+version = "0.1.0"
+edition = "2021"
+description = "Umbrella crate for Korg Minilogue synthesizer libraries"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/oxur/minilogue-xd"
+keywords = ["midi", "synthesizer", "korg", "minilogue", "music"]
+categories = ["multimedia::audio", "hardware-support"]
+
+[dependencies]
+minilogue-xd = { path = "../minilogue-xd", version = "0.1.0" }

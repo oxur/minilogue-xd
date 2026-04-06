@@ -1,0 +1,25 @@
+[package]
+name = "minilogue-xd"
+version = "0.1.0"
+edition = "2021"
+description = "Rust library for the Korg Minilogue XD synthesizer MIDI implementation"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/oxur/minilogue-xd"
+keywords = ["midi", "synthesizer", "korg", "minilogue", "music"]
+categories = ["multimedia::audio", "hardware-support"]
+
+[features]
+default = ["midi-io", "file-formats", "std"]
+std = []
+midi-io = ["dep:midir"]
+file-formats = ["dep:zip"]
+
+[dependencies]
+thiserror = "2"
+bitflags = "2"
+crc32fast = "1"
+midir = { version = "0.10", optional = true }
+zip = { version = "2", optional = true, default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+proptest = "1"

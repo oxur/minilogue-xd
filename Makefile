@@ -209,7 +209,7 @@ deps: ensure-binstall
 	@cargo upgrade
 	@echo "$(GREEN)✓ Cargo deps upgraded$(RESET)"
 
-docs: DOCS_PATH = target/doc/$(CODE_NAME)
+docs: DOCS_PATH = target/doc/minilogue_xd
 docs:
 	@cargo doc --all-features --no-deps --workspace
 	@echo
@@ -254,7 +254,7 @@ push:
 	done
 
 # Crates in dependency order (leaf crates first, dependent crates later)
-PUBLISH_ORDER := minilogue
+PUBLISH_ORDER := minilogue-xd minilogue
 # crates.io rate limit delay (seconds)
 PUBLISH_DELAY := 372
 .PHONY: publish
