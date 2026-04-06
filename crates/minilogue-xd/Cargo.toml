@@ -23,3 +23,15 @@ zip = { version = "2", optional = true, default-features = false, features = ["d
 
 [dev-dependencies]
 proptest = "1"
+
+[[example]]
+name = "list_ports"
+required-features = ["midi-io"]
+
+[[example]]
+name = "test_drive"
+required-features = ["midi-io"]
+
+[[example]]
+name = "berlin_school"
+required-features = ["midi-io"]
