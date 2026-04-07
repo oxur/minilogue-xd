@@ -82,7 +82,7 @@ impl std::fmt::Display for ProgramNumber {
 /// [`to_bytes`](Self::to_bytes) use the raw blob as a base buffer, ensuring
 /// that hardware-specific flag bits in unused bit positions (e.g. the upper
 /// 6 bits of 10-bit parameter high bytes) survive a round-trip.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ProgramData {
     /// Synth parameters (offsets 0--155).
     pub synth: SynthParams,
@@ -99,16 +99,6 @@ pub struct ProgramData {
 impl PartialEq for ProgramData {
     fn eq(&self, other: &Self) -> bool {
         self.synth == other.synth && self.sequencer == other.sequencer
-    }
-}
-
-impl Default for ProgramData {
-    fn default() -> Self {
-        Self {
-            synth: SynthParams::default(),
-            sequencer: SequencerParams::default(),
-            raw_blob: None,
-        }
     }
 }
 
