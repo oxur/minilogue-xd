@@ -1,0 +1,52 @@
+Minilogue XD MIDI CC Legend
+===========================
+CC  16  Amp EG Attack
+CC  17  Amp EG Decay
+CC  18  Amp EG Sustain
+CC  19  Amp EG Release
+CC  20  EG Attack
+CC  21  EG Decay
+CC  22  EG Int
+CC  23  EG Target
+CC  24  LFO Rate
+CC  26  LFO Int
+CC  28  Mod FX Time
+CC  29  Mod FX Depth
+CC  33  Multi Level
+CC  34  VCO 1 Pitch
+CC  35  VCO 2 Pitch
+CC  36  VCO 1 Shape
+CC  37  VCO 2 Shape
+CC  39  VCO 1 Level
+CC  40  VCO 2 Level
+CC  41  Cross Mod Depth
+CC  43  Cutoff
+CC  44  Resonance
+CC  48  VCO 1 Octave
+CC  49  VCO 2 Octave
+CC  50  VCO 1 Wave
+CC  51  VCO 2 Wave
+CC  53  Multi Type
+CC  54  Multi Shape
+CC  56  LFO Target
+CC  57  LFO Wave
+CC  58  LFO Mode
+CC  63  Data Entry LSB (10-bit low 3 bits)
+CC  80  Sync
+CC  81  Ring
+CC  83  Cutoff Keytrack
+CC  84  Cutoff Drive
+CC  88  Mod FX Type
+CC  89  Delay Sub Type
+CC  90  Reverb Sub Type
+CC  92  Mod FX On/Off
+CC  93  Delay On/Off
+CC  94  Reverb On/Off
+CC  96  Mod FX Sub Type
+CC 104  Multi Shift Shape
+CC 105  Delay Time
+CC 106  Delay Depth
+CC 107  Delay Dry/Wet
+CC 108  Reverb Time
+CC 109  Reverb Depth
+CC 110  Reverb Dry/Wet
