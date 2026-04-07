@@ -40,13 +40,17 @@ minilogue-xd = { version = "0.1", default-features = false, features = ["file-fo
 ```rust
 use minilogue_xd::{
     controller::RealtimeController,
-    param::enums::{VcoWave, VcoOctave, LfoMode, EgTarget, MicroTuning},
+    device,
+    message::U4,
+    param::enums::{VcoWave, LfoMode, EgTarget, MicroTuning},
     transport::MidirOutput,
 };
 
 fn main() -> minilogue_xd::Result<()> {
-    let output = MidirOutput::connect("minilogue xd", 0)?;
-    let mut xd = RealtimeController::new(output, 0);
+    let port = device::find_output_port()?
+        .expect("Minilogue XD not found");
+    let output = MidirOutput::connect(&port)?;
+    let mut xd = RealtimeController::new(output, U4::new(0)?);
 
     // VCO control — natural units, typed enums
     xd.set_vco1_wave(VcoWave::Saw)?;

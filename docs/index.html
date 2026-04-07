@@ -537,13 +537,16 @@ minilogue-xd = { version = "0.1", default-features = false, features = ["file-fo
             <div class="code-block">
                 <pre><span class="kw">use</span> minilogue_xd::{
     controller::<span class="ty">RealtimeController</span>,
+    device,
     message::{<span class="ty">U4</span>, <span class="ty">U7</span>},
     param::enums::{<span class="ty">VcoWave</span>, <span class="ty">LfoMode</span>, <span class="ty">EgTarget</span>, <span class="ty">MicroTuning</span>},
     transport::<span class="ty">MidirOutput</span>,
 };
 
 <span class="kw">fn</span> <span class="fn-name">main</span>() -> minilogue_xd::<span class="ty">Result</span>&lt;()&gt; {
-    <span class="kw">let</span> output = <span class="ty">MidirOutput</span>::<span class="fn-name">connect</span>(<span class="st">"minilogue xd SOUND"</span>)?;
+    <span class="kw">let</span> port = device::<span class="fn-name">find_output_port</span>()?
+        .<span class="fn-name">expect</span>(<span class="st">"Minilogue XD not found"</span>);
+    <span class="kw">let</span> output = <span class="ty">MidirOutput</span>::<span class="fn-name">connect</span>(&port)?;
     <span class="kw">let</span> <span class="kw">mut</span> xd = <span class="ty">RealtimeController</span>::<span class="fn-name">new</span>(output, <span class="ty">U4</span>::<span class="fn-name">new</span>(<span class="num">0</span>)?);
 
     <span class="cm">// VCO control — natural units, typed enums</span>
