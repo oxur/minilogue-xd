@@ -62,6 +62,10 @@ Feature flags: `midi-io` (default, midir), `file-formats` (default, zip), `std` 
 
 ## Writing Code
 
+### Sound Design
+
+**`assets/ai/SOUND_DESIGN.md`** -- Minilogue XD sound design skill: patch architecture, parameter relationships, classic sound recipes (pads, bass, leads, Berlin School, ambient, acid), sequencing patterns, genre quick reference, and idiomatic library API usage. **Read this when designing sounds, creating patches, or brainstorming electronica.**
+
 ### Rust Quality Guidelines
 
 1. **`assets/ai/ai-rust/skills/claude/SKILL.md`** -- advanced Rust programming skill (**use this**)
