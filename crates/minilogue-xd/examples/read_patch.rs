@@ -22,23 +22,15 @@ fn main() -> minilogue_xd::Result<()> {
     let program = ProgramNumber::new(prog_num)?;
 
     // Connect to the XD.
-    // SysEx: send on SOUND (direct to synth), listen on KBD/KNOB (synth responses).
-    let out_ports = device::list_output_ports()?;
-    let in_ports = device::list_input_ports()?;
-
-    let out_port = out_ports
-        .iter()
-        .find(|p| p.contains(device::OUTPUT_PORT_SOUND))
-        .expect("Minilogue XD SOUND port not found");
-
-    let in_port = in_ports
-        .iter()
-        .find(|p| p.contains("KBD/KNOB"))
+    // SysEx: send on SOUND, listen on KBD/KNOB.
+    let out_port = device::find_output(device::OutputPort::Sound)?
+        .expect("Minilogue XD SOUND port not found — is it connected via USB?");
+    let in_port = device::find_input(device::InputPort::KbdKnob)?
         .expect("Minilogue XD KBD/KNOB port not found");
 
     println!("Connecting to Minilogue XD...");
-    let mut output = MidirOutput::connect(out_port)?;
-    let mut input = MidirInput::connect(in_port)?;
+    let mut output = MidirOutput::connect(&out_port)?;
+    let mut input = MidirInput::connect(&in_port)?;
 
     println!("Requesting program {prog_num:03}...\n");
     let mut tx = SysexTransaction::new(&mut output, &mut input, U4::new(0)?)

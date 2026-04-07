@@ -474,14 +474,10 @@ stepped_param_enum! {
     }
 }
 
-stepped_param_enum! {
-    /// User parameter display type.
-    UserParamType {
-        Percent => { tx: 0, rx: 0..=0, prog: 0 },
-        Bipolar => { tx: 1, rx: 1..=1, prog: 1 },
-        Select  => { tx: 2, rx: 2..=2, prog: 2 },
-    }
-}
+// Note: UserParamType was previously defined here but removed because
+// the 2-bit field in the program blob can hold 0-3, while the spec only
+// documents 0-2. Real factory patches use value 3. SynthParams now
+// stores user_param*_type as raw u8 for faithful round-tripping.
 
 stepped_param_enum! {
     /// Multi-engine audio routing.
@@ -973,9 +969,8 @@ mod tests {
 
     // --- NRPN-only small enums ---
 
-    // CvInMode, UserParamType, MultiRouting, PortamentoMode, LfoTargetOsc
-    // have point-valued RX bands, so rx_full_coverage won't cover 0..=127.
-    // We test them individually.
+    // CvInMode, MultiRouting, PortamentoMode, LfoTargetOsc have point-valued
+    // RX bands, so rx_full_coverage won't cover 0..=127. Test individually.
 
     mod cv_in_mode {
         use super::*;
@@ -1007,33 +1002,6 @@ mod tests {
         #[test]
         fn display() {
             assert_eq!(format!("{}", CvInMode::CvGatePlus), "CvGatePlus");
-        }
-    }
-
-    mod user_param_type {
-        use super::*;
-
-        #[test]
-        fn tx_roundtrip() {
-            assert_tx_roundtrip(&[
-                UserParamType::Percent,
-                UserParamType::Bipolar,
-                UserParamType::Select,
-            ]);
-        }
-
-        #[test]
-        fn program_roundtrip() {
-            assert_program_roundtrip(&[
-                UserParamType::Percent,
-                UserParamType::Bipolar,
-                UserParamType::Select,
-            ]);
-        }
-
-        #[test]
-        fn rx_out_of_band() {
-            assert!(UserParamType::from_rx_value(3).is_err());
         }
     }
 

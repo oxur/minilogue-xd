@@ -1,28 +1,113 @@
-//! Device discovery, port constants, and CC name lookup for the Korg
-//! Minilogue XD.
+//! Device discovery, port types, and CC name lookup for the Korg Minilogue XD.
 //!
-//! This module provides:
-//! - **Constants** for known USB MIDI port names and internal client strings
-//! - **Discovery functions** to enumerate MIDI ports and locate the Minilogue
-//!   XD automatically (behind the `midi-io` feature flag)
-//! - **CC name lookup** mapping MIDI CC numbers to Minilogue XD parameter names
+//! The Minilogue XD exposes **four USB MIDI ports**, named from the device's
+//! perspective:
+//!
+//! | Direction | Port | Purpose |
+//! |-----------|------|---------|
+//! | Output (we send to) | **SOUND** | Direct to the synth engine — notes, CCs, SysEx |
+//! | Output (we send to) | **MIDI OUT** | Forwarded to the physical MIDI OUT jack |
+//! | Input (we hear from) | **KBD/KNOB** | Keyboard, knobs, and SysEx responses |
+//! | Input (we hear from) | **MIDI IN** | Data arriving on the physical MIDI IN jack |
+//!
+//! For **real-time control** (notes, CCs): send on SOUND.
+//! For **SysEx transactions**: send on SOUND, listen on KBD/KNOB.
+//! For **external MIDI routing**: use MIDI OUT / MIDI IN.
+//!
+//! Use [`OutputPort`] and [`InputPort`] enums to select ports without
+//! hardcoding strings.
+
+use std::fmt;
 
 #[cfg(feature = "midi-io")]
 use crate::error::{Error, Result};
 
 // ---------------------------------------------------------------------------
-// Port name patterns (USB MIDI)
+// Port enums
 // ---------------------------------------------------------------------------
 
-/// The USB MIDI output port that drives the Minilogue XD sound engine
-/// directly (bypasses the internal MIDI router).
+/// An output port on the Minilogue XD (a destination we send MIDI data to).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum OutputPort {
+    /// Direct to the synth engine — notes, CCs, and SysEx requests.
+    /// This is the preferred port for real-time control and SysEx.
+    Sound,
+    /// Forwarded to the physical MIDI OUT jack on the back panel.
+    /// Use this for routing to external MIDI devices.
+    MidiOut,
+}
+
+impl OutputPort {
+    /// The USB MIDI port name substring to search for.
+    pub fn port_name_pattern(self) -> &'static str {
+        match self {
+            Self::Sound => "minilogue xd SOUND",
+            Self::MidiOut => "minilogue xd MIDI OUT",
+        }
+    }
+
+    /// All output port variants in preference order (Sound first).
+    pub const ALL: &'static [OutputPort] = &[OutputPort::Sound, OutputPort::MidiOut];
+}
+
+impl fmt::Display for OutputPort {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Sound => write!(f, "SOUND"),
+            Self::MidiOut => write!(f, "MIDI OUT"),
+        }
+    }
+}
+
+/// An input port on the Minilogue XD (a source we receive MIDI data from).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum InputPort {
+    /// Keyboard, knob, and SysEx responses from the synth engine.
+    /// This is the port for receiving SysEx dump responses.
+    KbdKnob,
+    /// Data arriving on the physical MIDI IN jack.
+    /// Use this for receiving from external MIDI devices.
+    MidiIn,
+}
+
+impl InputPort {
+    /// The USB MIDI port name substring to search for.
+    pub fn port_name_pattern(self) -> &'static str {
+        match self {
+            Self::KbdKnob => "minilogue xd KBD/KNOB",
+            Self::MidiIn => "minilogue xd MIDI IN",
+        }
+    }
+
+    /// All input port variants in preference order (KbdKnob first).
+    pub const ALL: &'static [InputPort] = &[InputPort::KbdKnob, InputPort::MidiIn];
+}
+
+impl fmt::Display for InputPort {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::KbdKnob => write!(f, "KBD/KNOB"),
+            Self::MidiIn => write!(f, "MIDI IN"),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Legacy constants (kept for backward compatibility, prefer the enums above)
+// ---------------------------------------------------------------------------
+
+/// The USB MIDI output port that drives the synth engine directly.
 pub const OUTPUT_PORT_SOUND: &str = "minilogue xd SOUND";
 
-/// The USB MIDI output port that routes through the Minilogue XD's MIDI
-/// implementation (channel filtering, local on/off, etc.).
+/// The USB MIDI output port that routes to the physical MIDI OUT jack.
 pub const OUTPUT_PORT_MIDI: &str = "minilogue xd MIDI OUT";
 
-/// The USB MIDI input port for receiving data from the Minilogue XD.
+/// The USB MIDI input port for keyboard/knob data and SysEx responses.
+pub const INPUT_PORT_KBD_KNOB: &str = "minilogue xd KBD/KNOB";
+
+/// The USB MIDI input port for data from the physical MIDI IN jack.
 pub const INPUT_PORT_MIDI: &str = "minilogue xd MIDI IN";
 
 /// The product name used in file metadata (e.g., `.mnlgxdprog` XML headers).
@@ -80,42 +165,96 @@ pub fn list_input_ports() -> Result<Vec<String>> {
         .collect())
 }
 
-/// Finds the Minilogue XD's preferred output port.
+/// Finds a Minilogue XD output port, preferring the given port type.
 ///
-/// Searches for the SOUND port first (direct to sound engine), falling back
-/// to the MIDI OUT port. Returns `Ok(None)` if no matching port is found.
+/// If the preferred port is not found, falls back to the other output port.
+/// Returns `Ok(None)` if no Minilogue XD output port is found.
 ///
-/// # Errors
+/// # Examples
 ///
-/// Returns [`Error::MidiIo`] if the MIDI subsystem cannot be initialized.
+/// ```rust,ignore
+/// // Prefer SOUND for real-time control and SysEx
+/// let port = device::find_output(OutputPort::Sound)?;
+///
+/// // Prefer MIDI OUT for routing to external gear
+/// let port = device::find_output(OutputPort::MidiOut)?;
+/// ```
 #[cfg(feature = "midi-io")]
-pub fn find_output_port() -> Result<Option<String>> {
+pub fn find_output(prefer: OutputPort) -> Result<Option<String>> {
     let ports = list_output_ports()?;
-    // Prefer SOUND port (direct to engine)
-    if let Some(p) = ports.iter().find(|n| n.contains(OUTPUT_PORT_SOUND)) {
+    // Try preferred first
+    if let Some(p) = ports
+        .iter()
+        .find(|n| n.contains(prefer.port_name_pattern()))
+    {
         return Ok(Some(p.clone()));
     }
-    // Fall back to MIDI OUT
-    if let Some(p) = ports.iter().find(|n| n.contains(OUTPUT_PORT_MIDI)) {
-        return Ok(Some(p.clone()));
+    // Fall back to any other XD output port
+    for variant in OutputPort::ALL {
+        if *variant != prefer {
+            if let Some(p) = ports
+                .iter()
+                .find(|n| n.contains(variant.port_name_pattern()))
+            {
+                return Ok(Some(p.clone()));
+            }
+        }
     }
     Ok(None)
 }
 
-/// Finds the Minilogue XD's input port.
+/// Finds a Minilogue XD input port, preferring the given port type.
 ///
-/// Returns `Ok(None)` if no matching port is found.
+/// If the preferred port is not found, falls back to the other input port.
+/// Returns `Ok(None)` if no Minilogue XD input port is found.
 ///
-/// # Errors
+/// # Examples
 ///
-/// Returns [`Error::MidiIo`] if the MIDI subsystem cannot be initialized.
+/// ```rust,ignore
+/// // Prefer KBD/KNOB for SysEx responses
+/// let port = device::find_input(InputPort::KbdKnob)?;
+///
+/// // Prefer MIDI IN for external MIDI data
+/// let port = device::find_input(InputPort::MidiIn)?;
+/// ```
 #[cfg(feature = "midi-io")]
-pub fn find_input_port() -> Result<Option<String>> {
+pub fn find_input(prefer: InputPort) -> Result<Option<String>> {
     let ports = list_input_ports()?;
-    if let Some(p) = ports.iter().find(|n| n.contains(INPUT_PORT_MIDI)) {
+    // Try preferred first
+    if let Some(p) = ports
+        .iter()
+        .find(|n| n.contains(prefer.port_name_pattern()))
+    {
         return Ok(Some(p.clone()));
     }
+    // Fall back to any other XD input port
+    for variant in InputPort::ALL {
+        if *variant != prefer {
+            if let Some(p) = ports
+                .iter()
+                .find(|n| n.contains(variant.port_name_pattern()))
+            {
+                return Ok(Some(p.clone()));
+            }
+        }
+    }
     Ok(None)
+}
+
+/// Finds the preferred output port (SOUND) for real-time control.
+///
+/// Convenience wrapper for `find_output(OutputPort::Sound)`.
+#[cfg(feature = "midi-io")]
+pub fn find_output_port() -> Result<Option<String>> {
+    find_output(OutputPort::Sound)
+}
+
+/// Finds the preferred input port (KBD/KNOB) for SysEx responses.
+///
+/// Convenience wrapper for `find_input(InputPort::KbdKnob)`.
+#[cfg(feature = "midi-io")]
+pub fn find_input_port() -> Result<Option<String>> {
+    find_input(InputPort::KbdKnob)
 }
 
 // ---------------------------------------------------------------------------
@@ -124,19 +263,11 @@ pub fn find_input_port() -> Result<Option<String>> {
 
 /// Returns the Minilogue XD parameter name for a MIDI CC number, if known.
 ///
-/// The Minilogue XD uses 49 CC numbers to expose its front-panel parameters
+/// The Minilogue XD uses 63 CC numbers to expose its front-panel parameters
 /// over MIDI. This function maps each recognized CC to a human-readable
 /// parameter name.
 ///
-/// # Examples
-///
-/// ```
-/// use minilogue_xd::device::cc_name;
-///
-/// assert_eq!(cc_name(43), Some("Cutoff"));
-/// assert_eq!(cc_name(44), Some("Resonance"));
-/// assert_eq!(cc_name(3), None); // not used by the XD
-/// ```
+/// Returns `None` for unrecognized CC numbers.
 pub fn cc_name(cc: u8) -> Option<&'static str> {
     match cc {
         0 => Some("Bank Select MSB"),
@@ -177,6 +308,7 @@ pub fn cc_name(cc: u8) -> Option<&'static str> {
         56 => Some("LFO Target"),
         57 => Some("LFO Wave"),
         58 => Some("LFO Mode"),
+        59 => Some("Voice Mode Depth (alt)"),
         63 => Some("Data Entry LSB (10-bit low 3 bits)"),
         64 => Some("Damper / Hold"),
         80 => Some("Sync"),
@@ -206,112 +338,115 @@ pub fn cc_name(cc: u8) -> Option<&'static str> {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // ---------------------------------------------------------------
-    // CC name lookup
-    // ---------------------------------------------------------------
+    // --- Port enums ---
 
     #[test]
-    fn test_cc_name_cutoff() {
-        assert_eq!(cc_name(43), Some("Cutoff"));
+    fn output_port_sound_pattern() {
+        assert!(OutputPort::Sound.port_name_pattern().contains("SOUND"));
     }
 
     #[test]
-    fn test_cc_name_resonance() {
-        assert_eq!(cc_name(44), Some("Resonance"));
+    fn output_port_midi_pattern() {
+        assert!(OutputPort::MidiOut.port_name_pattern().contains("MIDI OUT"));
     }
 
     #[test]
-    fn test_cc_name_vco1_wave() {
-        assert_eq!(cc_name(50), Some("VCO 1 Wave"));
+    fn input_port_kbd_knob_pattern() {
+        assert!(InputPort::KbdKnob.port_name_pattern().contains("KBD/KNOB"));
     }
 
     #[test]
-    fn test_cc_name_unknown_3() {
-        assert_eq!(cc_name(3), None);
+    fn input_port_midi_pattern() {
+        assert!(InputPort::MidiIn.port_name_pattern().contains("MIDI IN"));
     }
 
     #[test]
-    fn test_cc_name_unknown_100() {
-        assert_eq!(cc_name(100), None);
+    fn output_port_display() {
+        assert_eq!(OutputPort::Sound.to_string(), "SOUND");
+        assert_eq!(OutputPort::MidiOut.to_string(), "MIDI OUT");
     }
 
     #[test]
-    fn test_cc_name_unknown_127() {
-        assert_eq!(cc_name(127), None);
+    fn input_port_display() {
+        assert_eq!(InputPort::KbdKnob.to_string(), "KBD/KNOB");
+        assert_eq!(InputPort::MidiIn.to_string(), "MIDI IN");
     }
 
     #[test]
-    fn test_cc_name_exhaustive_count() {
-        let count = (0..=127).filter(|&cc| cc_name(cc).is_some()).count();
-        assert_eq!(count, 63, "expected exactly 63 known CC mappings");
+    fn output_port_all_ordering() {
+        assert_eq!(OutputPort::ALL, &[OutputPort::Sound, OutputPort::MidiOut]);
     }
 
-    // ---------------------------------------------------------------
-    // Constants
-    // ---------------------------------------------------------------
+    #[test]
+    fn input_port_all_ordering() {
+        assert_eq!(InputPort::ALL, &[InputPort::KbdKnob, InputPort::MidiIn]);
+    }
+
+    // --- Constants ---
 
     #[test]
-    fn test_constants_non_empty() {
+    fn constants_non_empty() {
         assert!(!OUTPUT_PORT_SOUND.is_empty());
         assert!(!OUTPUT_PORT_MIDI.is_empty());
+        assert!(!INPUT_PORT_KBD_KNOB.is_empty());
         assert!(!INPUT_PORT_MIDI.is_empty());
         assert!(!PRODUCT_NAME.is_empty());
     }
 
     #[cfg(feature = "midi-io")]
     #[test]
-    fn test_midi_io_constants_non_empty() {
+    fn midi_io_constants_non_empty() {
         assert!(!MIDI_CLIENT_NAME.is_empty());
         assert!(!MIDI_OUT_PORT_NAME.is_empty());
         assert!(!MIDI_IN_PORT_NAME.is_empty());
     }
 
-    #[test]
-    fn test_output_port_sound_contains_sound() {
-        assert!(
-            OUTPUT_PORT_SOUND.contains("SOUND"),
-            "OUTPUT_PORT_SOUND should contain 'SOUND'"
-        );
-    }
-
-    #[test]
-    fn test_output_port_midi_contains_midi() {
-        assert!(
-            OUTPUT_PORT_MIDI.contains("MIDI"),
-            "OUTPUT_PORT_MIDI should contain 'MIDI'"
-        );
-    }
-
-    #[test]
-    fn test_input_port_midi_contains_midi() {
-        assert!(
-            INPUT_PORT_MIDI.contains("MIDI"),
-            "INPUT_PORT_MIDI should contain 'MIDI'"
-        );
-    }
-
-    // ---------------------------------------------------------------
-    // Discovery (requires hardware — ignored in CI)
-    // ---------------------------------------------------------------
+    // --- Discovery (ignored on CI — no hardware) ---
 
     #[cfg(feature = "midi-io")]
     #[test]
     #[ignore]
-    fn test_list_output_ports_succeeds() {
-        let ports = list_output_ports().expect("list_output_ports should not error");
-        // On CI without hardware this will be empty; that's fine.
-        let _ = ports;
+    fn list_output_ports_returns_vec() {
+        let ports = list_output_ports().unwrap();
+        println!("Output ports: {ports:?}");
     }
 
     #[cfg(feature = "midi-io")]
     #[test]
     #[ignore]
-    fn test_list_input_ports_succeeds() {
-        let ports = list_input_ports().expect("list_input_ports should not error");
-        let _ = ports;
+    fn list_input_ports_returns_vec() {
+        let ports = list_input_ports().unwrap();
+        println!("Input ports: {ports:?}");
+    }
+
+    // --- CC names ---
+
+    #[test]
+    fn cc_name_known() {
+        assert_eq!(cc_name(43), Some("Cutoff"));
+        assert_eq!(cc_name(44), Some("Resonance"));
+        assert_eq!(cc_name(50), Some("VCO 1 Wave"));
+        assert_eq!(cc_name(93), Some("Delay On/Off"));
+    }
+
+    #[test]
+    fn cc_name_unknown() {
+        assert_eq!(cc_name(3), None);
+        assert_eq!(cc_name(100), None);
+        assert_eq!(cc_name(127), None);
+    }
+
+    #[test]
+    fn cc_name_count() {
+        let count = (0..=127).filter(|&cc| cc_name(cc).is_some()).count();
+        assert_eq!(count, 64, "expected 64 known CCs");
     }
 }
