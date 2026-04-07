@@ -11,19 +11,19 @@
 //!
 //! ```text
 //!  +------------------------------------------------------------------+
-//!  |  Layer 4 - High-Level API                                       |
+//!  |  Layer 4 - High-Level API                                        |
 //!  |  PatchBuilder, SequenceBuilder, RealtimeController               |
 //!  +------------------------------------------------------------------+
-//!  |  Layer 3 - SysEx Layer                                          |
-//!  |  Program/Global blobs, tuning tables, user modules,             |
-//!  |  SysexTransaction (request/response with ACK/NAK)               |
+//!  |  Layer 3 - SysEx Layer                                           |
+//!  |  Program/Global blobs, tuning tables, user modules,              |
+//!  |  SysexTransaction (request/response with ACK/NAK)                |
 //!  +------------------------------------------------------------------+
-//!  |  Layer 2 - Parameter Layer                                      |
-//!  |  CC map (50+ params), NRPN map (29 params), 10-bit encoding,   |
-//!  |  typed enums for all stepped/discrete parameters                |
+//!  |  Layer 2 - Parameter Layer                                       |
+//!  |  CC map (50+ params), NRPN map (29 params), 10-bit encoding,     |
+//!  |  typed enums for all stepped/discrete parameters                 |
 //!  +------------------------------------------------------------------+
-//!  |  Layer 1 - Foundation                                           |
-//!  |  7-bit codec, channel/realtime/common messages, MIDI I/O        |
+//!  |  Layer 1 - Foundation                                            |
+//!  |  7-bit codec, channel/realtime/common messages, MIDI I/O         |
 //!  +------------------------------------------------------------------+
 //! ```
 //!
@@ -64,10 +64,10 @@
 //!
 //! # Feature Flags
 //!
-//! | Feature        | Default | Description                                    |
-//! |----------------|---------|------------------------------------------------|
-//! | `midi-io`      | Yes     | Real MIDI I/O via `midir`                      |
-//! | `file-formats` | Yes     | `.mnlgxdprog` / `.mnlgxdlib` file support      |
+//! | Feature        | Default | Description                                     |
+//! |----------------|---------|-------------------------------------------------|
+//! | `midi-io`      | Yes     | Real MIDI I/O via `midir`                       |
+//! | `file-formats` | Yes     | `.mnlgxdprog` / `.mnlgxdlib` file support       |
 //! | `std`          | Yes     | Standard library support (disable for `no_std`) |
 //!
 //! # MIDI Implementation Version
