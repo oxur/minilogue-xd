@@ -156,8 +156,8 @@ impl MidirOutput {
     pub fn connect(port_name: &str) -> Result<Self> {
         use crate::error::Error;
 
-        let midi_out =
-            midir::MidiOutput::new("minilogue-xd").map_err(|e| Error::MidiIo(e.to_string()))?;
+        let midi_out = midir::MidiOutput::new(crate::device::MIDI_CLIENT_NAME)
+            .map_err(|e| Error::MidiIo(e.to_string()))?;
 
         let ports = midi_out.ports();
         let port = ports
@@ -171,7 +171,7 @@ impl MidirOutput {
             .ok_or_else(|| Error::MidiIo(format!("no MIDI output port matching '{port_name}'")))?;
 
         let connection = midi_out
-            .connect(port, "minilogue-xd-out")
+            .connect(port, crate::device::MIDI_OUT_PORT_NAME)
             .map_err(|e| Error::MidiIo(e.to_string()))?;
 
         Ok(Self { connection })
@@ -186,7 +186,7 @@ impl MidirOutput {
     pub fn available_ports() -> Result<Vec<String>> {
         use crate::error::Error;
 
-        let midi_out = midir::MidiOutput::new("minilogue-xd-list")
+        let midi_out = midir::MidiOutput::new(crate::device::MIDI_CLIENT_NAME)
             .map_err(|e| Error::MidiIo(e.to_string()))?;
 
         let ports = midi_out.ports();
@@ -248,8 +248,8 @@ impl MidirInput {
     pub fn connect(port_name: &str) -> Result<Self> {
         use crate::error::Error;
 
-        let midi_in =
-            midir::MidiInput::new("minilogue-xd-in").map_err(|e| Error::MidiIo(e.to_string()))?;
+        let midi_in = midir::MidiInput::new(crate::device::MIDI_CLIENT_NAME)
+            .map_err(|e| Error::MidiIo(e.to_string()))?;
 
         let ports = midi_in.ports();
         let port = ports
@@ -268,7 +268,7 @@ impl MidirInput {
         let connection = midi_in
             .connect(
                 &port,
-                "minilogue-xd-in",
+                crate::device::MIDI_IN_PORT_NAME,
                 move |_timestamp, message, _| {
                     // Ignore send errors — the receiver may have been dropped.
                     let _ = tx.send(message.to_vec());
@@ -292,8 +292,8 @@ impl MidirInput {
     pub fn available_ports() -> Result<Vec<String>> {
         use crate::error::Error;
 
-        let midi_in =
-            midir::MidiInput::new("minilogue-xd-list").map_err(|e| Error::MidiIo(e.to_string()))?;
+        let midi_in = midir::MidiInput::new(crate::device::MIDI_CLIENT_NAME)
+            .map_err(|e| Error::MidiIo(e.to_string()))?;
 
         let ports = midi_in.ports();
         let names: Vec<String> = ports

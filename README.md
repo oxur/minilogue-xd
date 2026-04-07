@@ -168,6 +168,7 @@ minilogue-xd
 ├── transport       MIDI I/O abstraction (midir backend, MockOutput for tests)
 ├── message         Channel, realtime, and common message types
 ├── codec           Korg 7-bit ↔ 8-bit SysEx encoding (NOTE 1)
+├── device          Device discovery, port constants, CC name lookup
 ├── param
 │   ├── enums       Typed enums for all stepped/discrete parameters
 │   ├── encoding    10-bit, 8-bit high-res, and 14-bit parameter encoding

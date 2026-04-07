@@ -12,6 +12,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use minilogue_xd::controller::RealtimeController;
+use minilogue_xd::device;
 use minilogue_xd::message::{U4, U7};
 use minilogue_xd::param::enums::{
     CutoffDrive, CutoffKeytrack, DelaySubType, EgTarget, LfoMode, LfoTarget, LfoWave,
@@ -45,7 +46,9 @@ fn main() -> minilogue_xd::Result<()> {
     println!("=== Berlin School Sequencer ===");
     println!("    Tangerine Dream style\n");
 
-    let output = MidirOutput::connect("minilogue xd SOUND")?;
+    let port_name =
+        device::find_output_port()?.expect("Minilogue XD not found — is it connected via USB?");
+    let output = MidirOutput::connect(&port_name)?;
     let channel = U4::new(0)?;
     let mut xd = RealtimeController::new(output, channel);
 

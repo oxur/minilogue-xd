@@ -78,6 +78,7 @@
 pub mod builder;
 pub mod codec;
 pub mod controller;
+pub mod device;
 pub mod error;
 pub mod message;
 pub mod midi_file;

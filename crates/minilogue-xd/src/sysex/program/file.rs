@@ -133,9 +133,10 @@ pub fn write_lib_file<W: Write + Seek>(writer: W, programs: &[ProgramData]) -> R
     let xml = format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
          <KorgMSLibrarian_Data>\n\
-         <Product>minilogue xd</Product>\n\
+         <Product>{}</Product>\n\
          <Contents NumProgramData=\"{}\"/>\n\
          </KorgMSLibrarian_Data>\n",
+        crate::device::PRODUCT_NAME,
         programs.len()
     );
     zip.write_all(xml.as_bytes())?;

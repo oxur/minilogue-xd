@@ -20,85 +20,12 @@
 
 use std::io::Write;
 
+use crate::device::cc_name;
 use crate::param::enums::MultiType;
 use std::collections::BTreeSet;
 
 use crate::param::SteppedParam;
 use crate::sysex::program::SynthParams;
-
-// ---------------------------------------------------------------------------
-// CC legend — human-readable names for Minilogue XD CC numbers
-// ---------------------------------------------------------------------------
-
-/// Returns the Minilogue XD parameter name for a CC number, if known.
-fn cc_name(cc: u8) -> Option<&'static str> {
-    match cc {
-        0 => Some("Bank Select MSB"),
-        1 => Some("Modulation 1 (Joystick +Y)"),
-        2 => Some("Modulation 2 (Joystick -Y)"),
-        5 => Some("Portamento Time"),
-        6 => Some("Data Entry MSB"),
-        16 => Some("Amp EG Attack"),
-        17 => Some("Amp EG Decay"),
-        18 => Some("Amp EG Sustain"),
-        19 => Some("Amp EG Release"),
-        20 => Some("EG Attack"),
-        21 => Some("EG Decay"),
-        22 => Some("EG Int"),
-        23 => Some("EG Target"),
-        24 => Some("LFO Rate"),
-        26 => Some("LFO Int"),
-        27 => Some("Voice Mode Depth"),
-        28 => Some("Mod FX Time"),
-        29 => Some("Mod FX Depth"),
-        32 => Some("Bank Select LSB"),
-        33 => Some("Multi Level"),
-        34 => Some("VCO 1 Pitch"),
-        35 => Some("VCO 2 Pitch"),
-        36 => Some("VCO 1 Shape"),
-        37 => Some("VCO 2 Shape"),
-        39 => Some("VCO 1 Level"),
-        40 => Some("VCO 2 Level"),
-        41 => Some("Cross Mod Depth"),
-        43 => Some("Cutoff"),
-        44 => Some("Resonance"),
-        48 => Some("VCO 1 Octave"),
-        49 => Some("VCO 2 Octave"),
-        50 => Some("VCO 1 Wave"),
-        51 => Some("VCO 2 Wave"),
-        53 => Some("Multi Type"),
-        54 => Some("Multi Shape"),
-        56 => Some("LFO Target"),
-        57 => Some("LFO Wave"),
-        58 => Some("LFO Mode"),
-        63 => Some("Data Entry LSB (10-bit low 3 bits)"),
-        64 => Some("Damper / Hold"),
-        80 => Some("Sync"),
-        81 => Some("Ring"),
-        83 => Some("Cutoff Keytrack"),
-        84 => Some("Cutoff Drive"),
-        88 => Some("Mod FX Type"),
-        89 => Some("Delay Sub Type"),
-        90 => Some("Reverb Sub Type"),
-        92 => Some("Mod FX On/Off"),
-        93 => Some("Delay On/Off"),
-        94 => Some("Reverb On/Off"),
-        96 => Some("Mod FX Sub Type"),
-        98 => Some("NRPN LSB"),
-        99 => Some("NRPN MSB"),
-        103 => Some("Multi Select"),
-        104 => Some("Multi Shift Shape"),
-        105 => Some("Delay Time"),
-        106 => Some("Delay Depth"),
-        107 => Some("Delay Dry/Wet"),
-        108 => Some("Reverb Time"),
-        109 => Some("Reverb Depth"),
-        110 => Some("Reverb Dry/Wet"),
-        118 => Some("CV In 1"),
-        119 => Some("CV In 2"),
-        _ => None,
-    }
-}
 
 // ---------------------------------------------------------------------------
 // VLQ encoding
