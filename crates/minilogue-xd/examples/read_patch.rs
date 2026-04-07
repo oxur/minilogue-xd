@@ -23,10 +23,14 @@ fn main() -> minilogue_xd::Result<()> {
 
     // Connect to the XD.
     // SysEx: send on SOUND, listen on KBD/KNOB.
-    let out_port = device::find_output(device::OutputPort::Sound)?
-        .expect("Minilogue XD SOUND port not found — is it connected via USB?");
-    let in_port = device::find_input(device::InputPort::KbdKnob)?
-        .expect("Minilogue XD KBD/KNOB port not found");
+    let Some(out_port) = device::find_output(device::OutputPort::Sound)? else {
+        eprintln!("Minilogue XD not found — is it connected via USB?");
+        std::process::exit(1);
+    };
+    let Some(in_port) = device::find_input(device::InputPort::KbdKnob)? else {
+        eprintln!("Minilogue XD input port not found.");
+        std::process::exit(1);
+    };
 
     println!("Connecting to Minilogue XD...");
     let mut output = MidirOutput::connect(&out_port)?;

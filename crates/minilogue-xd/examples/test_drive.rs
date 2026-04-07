@@ -20,8 +20,10 @@ use minilogue_xd::transport::MidirOutput;
 
 fn main() -> minilogue_xd::Result<()> {
     println!("Connecting to Minilogue XD...");
-    let port_name =
-        device::find_output_port()?.expect("Minilogue XD not found — is it connected via USB?");
+    let Some(port_name) = device::find_output_port()? else {
+        eprintln!("Minilogue XD not found — is it connected via USB?");
+        std::process::exit(1);
+    };
     let output = MidirOutput::connect(&port_name)?;
     let channel = U4::new(0)?;
     let mut xd = RealtimeController::new(output, channel);
