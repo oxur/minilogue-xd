@@ -43,4 +43,8 @@ name = "read_patch"
 required-features = ["midi-io"]
 
 [[example]]
+name = "exit"
+required-features = ["midi-io"]
+
+[[example]]
 name = "export_midi"
