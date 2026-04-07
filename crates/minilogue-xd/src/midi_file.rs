@@ -183,6 +183,120 @@ impl MidiFileBuilder {
         self
     }
 
+    // -----------------------------------------------------------------
+    // High-level CC helpers (matching RealtimeController patterns)
+    // -----------------------------------------------------------------
+
+    /// Add a 10-bit CC parameter at the given tick.
+    ///
+    /// Emits two CC events: CC 63 with the lower 3 bits (LSB), then
+    /// `cc_number` with the upper 7 bits (MSB). This matches how the
+    /// Minilogue XD sends high-resolution parameters (cutoff, resonance,
+    /// EG attack/decay/sustain/release, LFO rate, VCO pitch/shape, etc.).
+    ///
+    /// `value` is clamped to 0..=1023.
+    ///
+    /// # Common CC numbers
+    ///
+    /// | CC | Parameter |
+    /// |----|-----------|
+    /// | 43 | Cutoff |
+    /// | 44 | Resonance |
+    /// | 16 | Amp EG Attack |
+    /// | 17 | Amp EG Decay |
+    /// | 18 | Amp EG Sustain |
+    /// | 19 | Amp EG Release |
+    /// | 24 | LFO Rate |
+    /// | 26 | LFO Int |
+    /// | 34 | VCO 1 Pitch |
+    /// | 36 | VCO 1 Shape |
+    pub fn ten_bit_cc(mut self, tick: u64, cc_number: u8, value: u16) -> Self {
+        let ch = self.channel;
+        let clamped = value.min(1023);
+        let lsb = (clamped & 0x07) as u8;
+        let msb = ((clamped >> 3) & 0x7F) as u8;
+        self.events.push(MidiFileEvent {
+            tick,
+            bytes: vec![0xB0 | ch, 63, lsb],
+        });
+        self.events.push(MidiFileEvent {
+            tick,
+            bytes: vec![0xB0 | ch, cc_number, msb],
+        });
+        self
+    }
+
+    /// Add a 10-bit CC parameter using a float (0.0–1.0) mapped to 0–1023.
+    ///
+    /// Convenience wrapper around [`ten_bit_cc`](Self::ten_bit_cc) for
+    /// natural-unit parameters. The value is clamped to 0.0..=1.0.
+    pub fn ten_bit_cc_f32(self, tick: u64, cc_number: u8, value: f32) -> Self {
+        let raw = (value.clamp(0.0, 1.0) * 1023.0).round() as u16;
+        self.ten_bit_cc(tick, cc_number, raw)
+    }
+
+    /// Add a stepped (enum) CC parameter at the given tick.
+    ///
+    /// Uses the enum's TX wire value via [`SteppedParam::to_tx_value`].
+    pub fn stepped_cc<T: SteppedParam>(mut self, tick: u64, cc_number: u8, value: T) -> Self {
+        let ch = self.channel;
+        self.events.push(MidiFileEvent {
+            tick,
+            bytes: vec![0xB0 | ch, cc_number, value.to_tx_value()],
+        });
+        self
+    }
+
+    /// Add an on/off CC parameter at the given tick.
+    ///
+    /// `true` sends value 127, `false` sends 0.
+    pub fn on_off_cc(mut self, tick: u64, cc_number: u8, on: bool) -> Self {
+        let ch = self.channel;
+        self.events.push(MidiFileEvent {
+            tick,
+            bytes: vec![0xB0 | ch, cc_number, if on { 127 } else { 0 }],
+        });
+        self
+    }
+
+    // -----------------------------------------------------------------
+    // Named parameter methods (mirrors RealtimeController)
+    // -----------------------------------------------------------------
+
+    /// Set the cutoff filter at the given tick (0.0–1.0 → 10-bit via CC 43).
+    pub fn set_cutoff(self, tick: u64, value: f32) -> Self {
+        self.ten_bit_cc_f32(tick, 43, value)
+    }
+
+    /// Set the resonance at the given tick (0.0–1.0 → 10-bit via CC 44).
+    pub fn set_resonance(self, tick: u64, value: f32) -> Self {
+        self.ten_bit_cc_f32(tick, 44, value)
+    }
+
+    /// Set the LFO rate at the given tick (0.0–1.0 → 10-bit via CC 24).
+    pub fn set_lfo_rate(self, tick: u64, value: f32) -> Self {
+        self.ten_bit_cc_f32(tick, 24, value)
+    }
+
+    /// Set the LFO intensity at the given tick (0.0–1.0 → 10-bit via CC 26).
+    pub fn set_lfo_int(self, tick: u64, value: f32) -> Self {
+        self.ten_bit_cc_f32(tick, 26, value)
+    }
+
+    /// Set the delay dry/wet at the given tick (0.0–1.0 → 10-bit via CC 107).
+    pub fn set_delay_dry_wet(self, tick: u64, value: f32) -> Self {
+        self.ten_bit_cc_f32(tick, 107, value)
+    }
+
+    /// Set the reverb dry/wet at the given tick (0.0–1.0 → 10-bit via CC 110).
+    pub fn set_reverb_dry_wet(self, tick: u64, value: f32) -> Self {
+        self.ten_bit_cc_f32(tick, 110, value)
+    }
+
+    // -----------------------------------------------------------------
+    // Patch snapshot
+    // -----------------------------------------------------------------
+
     /// Emits CC events for all key synthesizer parameters from a
     /// [`SynthParams`] snapshot.
     ///

@@ -56,31 +56,40 @@ fn main() -> std::io::Result<()> {
         (50, 65, 0.3),
     ];
 
-    // 4 repetitions in E minor
+    // Performance structure: (transpose, repeats, base_cutoff, cutoff_drift, vel_scale)
+    let passes: &[(i8, u32, f32, f32, f32)] = &[
+        // E minor — establish the theme
+        (0, 4, 0.30, 0.03, 1.0),
+        (0, 4, 0.42, 0.04, 1.0),
+        // C minor — darker, deeper
+        (-4, 4, 0.38, 0.03, 1.0),
+        (-4, 4, 0.50, 0.04, 1.0),
+        // E minor — return
+        (0, 4, 0.50, 0.04, 1.0),
+        (0, 4, 0.55, 0.03, 1.0),
+        // Fade out
+        (0, 2, 0.45, -0.03, 0.85),
+        (0, 2, 0.38, -0.03, 0.65),
+        (0, 2, 0.30, -0.03, 0.45),
+        (0, 2, 0.22, -0.02, 0.25),
+    ];
+
     let mut tick: u64 = 0;
-    for _ in 0..4 {
-        for &(note, vel, gate) in pattern {
-            let dur = (step as f32 * gate) as u64;
-            builder = builder.note(tick, note, vel, dur);
-            tick += step;
-        }
-    }
 
-    // 4 repetitions transposed to C minor (-4 semitones)
-    for _ in 0..4 {
-        for &(note, vel, gate) in pattern {
-            let dur = (step as f32 * gate) as u64;
-            builder = builder.note(tick, note.saturating_sub(4), vel, dur);
-            tick += step;
-        }
-    }
+    for &(transpose, repeats, base_cutoff, cutoff_drift, vel_scale) in passes {
+        for rep in 0..repeats {
+            // Cutoff automation: set at the start of each repetition
+            let cutoff = (base_cutoff + cutoff_drift * rep as f32).clamp(0.0, 1.0);
+            builder = builder.set_cutoff(tick, cutoff);
 
-    // 4 repetitions back in E minor
-    for _ in 0..4 {
-        for &(note, vel, gate) in pattern {
-            let dur = (step as f32 * gate) as u64;
-            builder = builder.note(tick, note, vel, dur);
-            tick += step;
+            // Notes for this repetition
+            for &(note, vel, gate) in pattern {
+                let transposed = (note as i8 + transpose).clamp(0, 127) as u8;
+                let scaled_vel = ((vel as f32 * vel_scale).round() as u8).clamp(1, 127);
+                let dur = (step as f32 * gate) as u64;
+                builder = builder.note(tick, transposed, scaled_vel, dur);
+                tick += step;
+            }
         }
     }
 
