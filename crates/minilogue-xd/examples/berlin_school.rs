@@ -18,7 +18,13 @@ use minilogue_xd::param::enums::{
     CutoffDrive, CutoffKeytrack, DelaySubType, EgTarget, LfoMode, LfoTarget, LfoWave,
     ReverbSubType, VcoOctave, VcoWave,
 };
+use minilogue_xd::theory::note::{Note, Pitch, PitchSymbol};
 use minilogue_xd::transport::MidirOutput;
+
+/// Shorthand: create a MIDI note number from a pitch symbol and octave.
+fn n(sym: PitchSymbol, oct: u8) -> u8 {
+    Note::new(Pitch::from(sym), oct).midi_pitch()
+}
 
 /// A single step in the sequence: MIDI note number and velocity.
 /// Velocity 0 = rest (silent step).
@@ -126,43 +132,46 @@ fn main() -> minilogue_xd::Result<()> {
     // The pattern has a hypnotic, interlocking quality — root and fifth
     // with passing tones and octave leaps that create the illusion of
     // multiple voices from a single sequence line.
+    // Named notes — no magic MIDI numbers!
+    use PitchSymbol::*;
+
     let pattern_a: Vec<Step> = vec![
-        Step::note(40, 100, 0.6), // E2  — root anchor
-        Step::note(47, 80, 0.4),  // B2  — fifth
-        Step::note(52, 90, 0.5),  // E3  — octave
-        Step::note(47, 70, 0.3),  // B2  — fifth echo
-        Step::note(55, 95, 0.6),  // G3  — minor third
-        Step::note(47, 75, 0.4),  // B2  — fifth
-        Step::note(52, 85, 0.5),  // E3  — octave
-        Step::note(50, 70, 0.3),  // D3  — passing tone (VII)
-        Step::note(40, 100, 0.6), // E2  — root
-        Step::note(47, 80, 0.4),  // B2  — fifth
-        Step::note(55, 90, 0.5),  // G3  — minor third
-        Step::note(52, 70, 0.3),  // E3  — octave
-        Step::note(57, 95, 0.6),  // A3  — fourth (tension)
-        Step::note(55, 75, 0.4),  // G3  — resolve
-        Step::note(52, 85, 0.5),  // E3  — home
-        Step::note(50, 65, 0.3),  // D3  — leading back
+        Step::note(n(E, 2), 100, 0.6), // root anchor
+        Step::note(n(B, 2), 80, 0.4),  // fifth
+        Step::note(n(E, 3), 90, 0.5),  // octave
+        Step::note(n(B, 2), 70, 0.3),  // fifth echo
+        Step::note(n(G, 3), 95, 0.6),  // minor third
+        Step::note(n(B, 2), 75, 0.4),  // fifth
+        Step::note(n(E, 3), 85, 0.5),  // octave
+        Step::note(n(D, 3), 70, 0.3),  // passing tone (VII)
+        Step::note(n(E, 2), 100, 0.6), // root
+        Step::note(n(B, 2), 80, 0.4),  // fifth
+        Step::note(n(G, 3), 90, 0.5),  // minor third
+        Step::note(n(E, 3), 70, 0.3),  // octave
+        Step::note(n(A, 3), 95, 0.6),  // fourth (tension)
+        Step::note(n(G, 3), 75, 0.4),  // resolve
+        Step::note(n(E, 3), 85, 0.5),  // home
+        Step::note(n(D, 3), 65, 0.3),  // leading back
     ];
 
     // Second pattern: higher register, more open
     let pattern_b: Vec<Step> = vec![
-        Step::note(52, 100, 0.6), // E3
-        Step::note(59, 80, 0.4),  // B3
-        Step::note(64, 90, 0.5),  // E4
-        Step::note(59, 70, 0.3),  // B3
-        Step::note(67, 95, 0.6),  // G4
-        Step::note(59, 75, 0.4),  // B3
-        Step::note(64, 85, 0.5),  // E4
-        Step::note(62, 70, 0.3),  // D4
-        Step::note(52, 100, 0.6), // E3
-        Step::note(59, 80, 0.4),  // B3
-        Step::note(67, 90, 0.5),  // G4
-        Step::note(64, 70, 0.3),  // E4
-        Step::note(69, 95, 0.6),  // A4
-        Step::note(67, 75, 0.4),  // G4
-        Step::note(64, 85, 0.5),  // E4
-        Step::rest(),             // rest — breathing room
+        Step::note(n(E, 3), 100, 0.6),
+        Step::note(n(B, 3), 80, 0.4),
+        Step::note(n(E, 4), 90, 0.5),
+        Step::note(n(B, 3), 70, 0.3),
+        Step::note(n(G, 4), 95, 0.6),
+        Step::note(n(B, 3), 75, 0.4),
+        Step::note(n(E, 4), 85, 0.5),
+        Step::note(n(D, 4), 70, 0.3),
+        Step::note(n(E, 3), 100, 0.6),
+        Step::note(n(B, 3), 80, 0.4),
+        Step::note(n(G, 4), 90, 0.5),
+        Step::note(n(E, 4), 70, 0.3),
+        Step::note(n(A, 4), 95, 0.6),
+        Step::note(n(G, 4), 75, 0.4),
+        Step::note(n(E, 4), 85, 0.5),
+        Step::rest(), // breathing room
     ];
 
     // ------------------------------------------------------------------

@@ -14,6 +14,8 @@ use minilogue_xd::param::enums::{
     CutoffDrive, CutoffKeytrack, DelaySubType, LfoMode, LfoTarget, LfoWave, ReverbSubType,
     VcoOctave, VcoWave,
 };
+use minilogue_xd::theory::chord::Chord;
+use minilogue_xd::theory::note::Notes;
 use minilogue_xd::transport::MidirOutput;
 
 fn main() -> minilogue_xd::Result<()> {
@@ -80,19 +82,21 @@ fn main() -> minilogue_xd::Result<()> {
     sleep(Duration::from_millis(200));
 
     // --- Play a Cm9 → Fm7 → Gm7 → Cm progression ---
+    // Built from music theory — no hardcoded MIDI numbers!
 
-    let progressions: &[(&str, &[u8])] = &[
-        ("Cm9", &[48, 55, 58, 62, 65]), // C3, G3, Bb3, D4, F4
-        ("Fm7", &[53, 60, 64, 67]),     // F3, C4, Eb4, G4
-        ("Gm7", &[55, 62, 65, 69]),     // G3, D4, F4, A4
-        ("Cm", &[48, 55, 60, 63]),      // C3, G3, C4, Eb4
+    let chords: Vec<(&str, Chord)> = vec![
+        ("Cm9", Chord::from_regex("Cm9").unwrap()),
+        ("Fm7", Chord::from_regex("Fm7").unwrap()),
+        ("Gm7", Chord::from_regex("Gm7").unwrap()),
+        ("Cm", Chord::from_regex("Cm").unwrap()),
     ];
 
-    for (name, notes) in progressions {
-        println!("  Playing {name}...");
+    for (name, chord) in &chords {
+        println!("  Playing {name} ({})...", chord.format_notes());
 
-        // Notes on
-        for &note in *notes {
+        // Notes on — get MIDI pitches from the chord's notes
+        let midi_notes: Vec<u8> = chord.notes().iter().map(|n| n.midi_pitch()).collect();
+        for &note in &midi_notes {
             xd.play_note(U7::new(note)?, U7::new(90)?)?;
             sleep(Duration::from_millis(20)); // slight strum
         }
@@ -100,7 +104,7 @@ fn main() -> minilogue_xd::Result<()> {
         sleep(Duration::from_millis(1500));
 
         // Notes off
-        for &note in *notes {
+        for &note in &midi_notes {
             xd.stop_note(U7::new(note)?)?;
         }
 

@@ -89,3 +89,6 @@ pub mod connection;
 pub mod transport;
 
 pub use error::{Error, Result};
+
+/// Re-export of the [`music_comp_mt`] music theory library.
+pub use music_comp_mt as theory;

@@ -19,6 +19,7 @@ file-formats = ["dep:zip"]
 thiserror = "2"
 bitflags = "2"
 crc32fast = "1"
+music-comp-mt = { version = "0.5", features = ["midi"] }
 midir = { version = "0.10", optional = true }
 zip = { version = "8.5", optional = true, default-features = false, features = ["deflate"] }
 

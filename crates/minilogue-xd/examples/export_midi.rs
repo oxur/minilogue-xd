@@ -7,6 +7,12 @@
 use minilogue_xd::midi_file::MidiFileBuilder;
 use minilogue_xd::param::enums::*;
 use minilogue_xd::sysex::program::SynthParams;
+use minilogue_xd::theory::note::{Note, Pitch, PitchSymbol};
+
+/// Shorthand: create a MIDI note number from a pitch symbol and octave.
+fn n(sym: PitchSymbol, oct: u8) -> u8 {
+    Note::new(Pitch::from(sym), oct).midi_pitch()
+}
 
 fn main() -> std::io::Result<()> {
     let tpq: u64 = 480;
@@ -36,24 +42,26 @@ fn main() -> std::io::Result<()> {
         .track_name("Berlin School -- Tangerine Dream style")
         .patch_ccs(0, &synth);
 
-    // E minor pattern (16 steps, 16th notes)
+    // E minor pattern (16 steps, 16th notes) — named notes, no magic numbers
+    use PitchSymbol::*;
+
     let pattern: &[(u8, u8, f32)] = &[
-        (40, 100, 0.6),
-        (47, 80, 0.4),
-        (52, 90, 0.5),
-        (47, 70, 0.3),
-        (55, 95, 0.6),
-        (47, 75, 0.4),
-        (52, 85, 0.5),
-        (50, 70, 0.3),
-        (40, 100, 0.6),
-        (47, 80, 0.4),
-        (55, 90, 0.5),
-        (52, 70, 0.3),
-        (57, 95, 0.6),
-        (55, 75, 0.4),
-        (52, 85, 0.5),
-        (50, 65, 0.3),
+        (n(E, 2), 100, 0.6), // root
+        (n(B, 2), 80, 0.4),  // fifth
+        (n(E, 3), 90, 0.5),  // octave
+        (n(B, 2), 70, 0.3),  // fifth echo
+        (n(G, 3), 95, 0.6),  // minor third
+        (n(B, 2), 75, 0.4),  // fifth
+        (n(E, 3), 85, 0.5),  // octave
+        (n(D, 3), 70, 0.3),  // VII
+        (n(E, 2), 100, 0.6), // root
+        (n(B, 2), 80, 0.4),  // fifth
+        (n(G, 3), 90, 0.5),  // minor third
+        (n(E, 3), 70, 0.3),  // octave
+        (n(A, 3), 95, 0.6),  // fourth (tension)
+        (n(G, 3), 75, 0.4),  // resolve
+        (n(E, 3), 85, 0.5),  // home
+        (n(D, 3), 65, 0.3),  // leading back
     ];
 
     // Performance structure: (transpose, repeats, base_cutoff, cutoff_drift, vel_scale)
