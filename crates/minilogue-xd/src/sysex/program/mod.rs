@@ -76,19 +76,63 @@ impl std::fmt::Display for ProgramNumber {
 ///
 /// Composed of [`SynthParams`] (offsets 0--155) and [`SequencerParams`]
 /// (offsets 156--1023).
-#[derive(Debug, Clone, PartialEq, Default)]
+///
+/// When parsed from hardware bytes via [`from_bytes`](Self::from_bytes), the
+/// original raw blob is preserved internally. Subsequent calls to
+/// [`to_bytes`](Self::to_bytes) use the raw blob as a base buffer, ensuring
+/// that hardware-specific flag bits in unused bit positions (e.g. the upper
+/// 6 bits of 10-bit parameter high bytes) survive a round-trip.
+#[derive(Debug, Clone)]
 pub struct ProgramData {
     /// Synth parameters (offsets 0--155).
     pub synth: SynthParams,
     /// Sequencer parameters (offsets 156--1023).
     pub sequencer: SequencerParams,
+    /// Raw blob bytes preserved for round-trip fidelity.
+    ///
+    /// When present, [`to_bytes`](Self::to_bytes) starts from these bytes
+    /// instead of zeros, ensuring hardware-specific flags in unused bit
+    /// positions are preserved.
+    raw_blob: Option<Box<[u8; Self::SIZE]>>,
+}
+
+impl PartialEq for ProgramData {
+    fn eq(&self, other: &Self) -> bool {
+        self.synth == other.synth && self.sequencer == other.sequencer
+    }
+}
+
+impl Default for ProgramData {
+    fn default() -> Self {
+        Self {
+            synth: SynthParams::default(),
+            sequencer: SequencerParams::default(),
+            raw_blob: None,
+        }
+    }
 }
 
 impl ProgramData {
     /// Total size of a program blob in bytes.
     pub const SIZE: usize = 1024;
 
+    /// Create a new `ProgramData` from synth and sequencer parameters.
+    ///
+    /// The resulting blob will not have a raw base, so [`to_bytes`](Self::to_bytes)
+    /// will produce a clean output starting from zeros.
+    pub fn new(synth: SynthParams, sequencer: SequencerParams) -> Self {
+        Self {
+            synth,
+            sequencer,
+            raw_blob: None,
+        }
+    }
+
     /// Parse a complete program blob from a byte slice.
+    ///
+    /// The raw bytes are preserved internally so that [`to_bytes`](Self::to_bytes)
+    /// can reproduce them faithfully, including hardware-specific flag bits
+    /// in unused bit positions.
     ///
     /// # Errors
     ///
@@ -104,16 +148,44 @@ impl ProgramData {
         }
         let synth = SynthParams::from_bytes(&bytes[..SynthParams::SIZE])?;
         let sequencer = SequencerParams::from_bytes(&bytes[SequencerParams::OFFSET..Self::SIZE])?;
-        Ok(Self { synth, sequencer })
+
+        // Preserve the raw blob for round-trip fidelity.
+        let mut raw = Box::new([0u8; Self::SIZE]);
+        raw.copy_from_slice(&bytes[..Self::SIZE]);
+
+        Ok(Self {
+            synth,
+            sequencer,
+            raw_blob: Some(raw),
+        })
     }
 
     /// Serialize to a 1024-byte vector.
+    ///
+    /// If this `ProgramData` was created via [`from_bytes`](Self::from_bytes),
+    /// the original raw blob is used as the base buffer, preserving
+    /// hardware-specific flag bits that are not modeled by the typed fields.
+    /// Otherwise a zeroed buffer is used.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(Self::SIZE);
-        let synth_bytes = self.synth.to_bytes();
-        out.extend_from_slice(&synth_bytes);
-        let seq_bytes = self.sequencer.to_bytes();
-        out.extend_from_slice(&seq_bytes);
+
+        if let Some(ref raw) = self.raw_blob {
+            // Use original blob bytes as the base for both sections.
+            let synth_base: &[u8; SynthParams::SIZE] =
+                raw[..SynthParams::SIZE].try_into().unwrap();
+            let synth_bytes = self.synth.to_bytes_with_base(synth_base);
+            out.extend_from_slice(&synth_bytes);
+
+            let seq_base = &raw[SequencerParams::OFFSET..Self::SIZE];
+            let seq_bytes = self.sequencer.to_bytes_with_base(seq_base);
+            out.extend_from_slice(&seq_bytes);
+        } else {
+            let synth_bytes = self.synth.to_bytes();
+            out.extend_from_slice(&synth_bytes);
+            let seq_bytes = self.sequencer.to_bytes();
+            out.extend_from_slice(&seq_bytes);
+        }
+
         debug_assert_eq!(out.len(), Self::SIZE);
         out
     }

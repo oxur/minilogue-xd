@@ -4,32 +4,34 @@
 //! convenient access to 10-bit, big-endian u16, and little-endian u16 values
 //! found in program and global data blobs.
 
-/// Read a 10-bit value from a big-endian byte pair at `offset`.
+/// Read a 10-bit value from a little-endian byte pair at `offset`.
 ///
-/// The high byte is at `bytes[offset]`, the low byte at `bytes[offset + 1]`.
-/// Only the lower 10 bits of the combined value are returned.
+/// The low byte is at `bytes[offset]`, the high byte at `bytes[offset + 1]`.
+/// Only the lower 10 bits of the combined value are returned (the upper 6
+/// bits of the high byte are masked off — the XD uses those for other data).
 ///
 /// # Panics
 ///
 /// Panics if `offset + 1 >= bytes.len()`.
 pub fn read_10bit(bytes: &[u8], offset: usize) -> u16 {
-    let hi = u16::from(bytes[offset]);
-    let lo = u16::from(bytes[offset + 1]);
+    let lo = u16::from(bytes[offset]);
+    let hi = u16::from(bytes[offset + 1]);
     ((hi << 8) | lo) & 0x03FF
 }
 
-/// Write a 10-bit value as a big-endian byte pair at `offset`.
+/// Write a 10-bit value as a little-endian byte pair at `offset`.
 ///
-/// Only the lower 10 bits of `value` are written. The upper 6 bits of the
-/// high byte are cleared.
+/// Only the lower 2 bits of the high byte (`bytes[offset + 1]`) are
+/// modified; the upper 6 bits are preserved. The XD packs additional
+/// data into those upper bits.
 ///
 /// # Panics
 ///
 /// Panics if `offset + 1 >= bytes.len()`.
 pub fn write_10bit(bytes: &mut [u8], offset: usize, value: u16) {
     let v = value & 0x03FF;
-    bytes[offset] = (v >> 8) as u8;
-    bytes[offset + 1] = (v & 0xFF) as u8;
+    bytes[offset] = (v & 0xFF) as u8;
+    bytes[offset + 1] = (bytes[offset + 1] & 0xFC) | (v >> 8) as u8;
 }
 
 /// Read a big-endian `u16` at `offset`.
@@ -88,21 +90,22 @@ mod tests {
 
     #[test]
     fn read_10bit_max() {
-        // 0x03FF = 1023
-        let data = [0x03, 0xFF];
+        // LE: lo=0xFF, hi=0x03 → (0x03 << 8) | 0xFF = 0x03FF = 1023
+        let data = [0xFF, 0x03];
         assert_eq!(read_10bit(&data, 0), 1023);
     }
 
     #[test]
     fn read_10bit_masks_upper_bits() {
-        // Full u16 = 0xFFFF, but only lower 10 bits = 0x03FF = 1023
+        // Full bytes 0xFF, 0xFF → upper 6 bits masked off → 1023
         let data = [0xFF, 0xFF];
         assert_eq!(read_10bit(&data, 0), 1023);
     }
 
     #[test]
     fn read_10bit_at_offset() {
-        let data = [0xAA, 0x01, 0x00];
+        // LE at offset 1: lo=0x00, hi=0x01 → 256
+        let data = [0xAA, 0x00, 0x01];
         assert_eq!(read_10bit(&data, 1), 256);
     }
 
@@ -110,22 +113,34 @@ mod tests {
     fn write_10bit_zero() {
         let mut data = [0xFF, 0xFF];
         write_10bit(&mut data, 0, 0);
-        assert_eq!(data, [0x00, 0x00]);
+        // LE: lo byte zeroed, hi byte upper 6 preserved (0xFC)
+        assert_eq!(data, [0x00, 0xFC]);
     }
 
     #[test]
     fn write_10bit_max() {
         let mut data = [0x00, 0x00];
         write_10bit(&mut data, 0, 1023);
-        assert_eq!(data, [0x03, 0xFF]);
+        // LE: lo=0xFF, hi=0x03
+        assert_eq!(data, [0xFF, 0x03]);
     }
 
     #[test]
     fn write_10bit_masks_upper_bits() {
         let mut data = [0x00, 0x00];
         write_10bit(&mut data, 0, 0xFFFF);
-        // Only lower 10 bits written.
-        assert_eq!(data, [0x03, 0xFF]);
+        // Only lower 10 bits written. LE: lo=0xFF, hi=0x03
+        assert_eq!(data, [0xFF, 0x03]);
+    }
+
+    #[test]
+    fn write_10bit_preserves_upper_bits() {
+        // High byte (offset+1) starts as 0xA4. Writing 0x01FF:
+        // LE: lo=0xFF at offset, hi bits = 0x01 at offset+1.
+        // Upper 6 of hi preserved: (0xA4 & 0xFC) | 0x01 = 0xA5.
+        let mut data = [0x00, 0xA4];
+        write_10bit(&mut data, 0, 0x01FF);
+        assert_eq!(data, [0xFF, 0xA5]);
     }
 
     #[test]
@@ -135,6 +150,14 @@ mod tests {
             write_10bit(&mut buf, 0, v);
             assert_eq!(read_10bit(&buf, 0), v, "round-trip failed for {v}");
         }
+    }
+
+    #[test]
+    fn read_10bit_matches_hardware() {
+        // Known value from Replicant xd: cutoff=665
+        // Hardware stores: lo=0x99, hi=0x02 (LE)
+        let data = [0x99, 0x02];
+        assert_eq!(read_10bit(&data, 0), 665);
     }
 
     // ---------------------------------------------------------------

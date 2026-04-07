@@ -25,8 +25,9 @@ const VALID_NAME_BYTES: &[u8] =
     b" !#$%&'()*,-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 /// Returns `true` if `b` is a valid program-name byte per note P1.
+/// Also accepts null (0x00) which the hardware uses for padding.
 fn is_valid_name_byte(b: u8) -> bool {
-    VALID_NAME_BYTES.contains(&b)
+    b == 0x00 || VALID_NAME_BYTES.contains(&b)
 }
 
 /// A 12-character program name using the restricted charset from note P1.
@@ -331,6 +332,8 @@ pub struct SynthParams {
     /// User parameter 6 display type.
     /// User param 6 type (0=Percent, 1=Bipolar, 2=Select, 3=reserved).
     pub user_param6_type: u8,
+    /// Upper 4 bits of byte 148 (bits 4-7), preserved for hardware round-trip.
+    pub user_param_type_flags: u8,
     /// User parameter 1 display type.
     /// User param 1 type (0=Percent, 1=Bipolar, 2=Select, 3=reserved).
     pub user_param1_type: u8,
@@ -492,9 +495,11 @@ impl SynthParams {
             user_param4: bytes[145],
             user_param5: bytes[146],
             user_param6: bytes[147],
-            // Byte 148: bits 0-1 = user_param5_type, bits 2-3 = user_param6_type.
+            // Byte 148: bits 0-1 = user_param5_type, bits 2-3 = user_param6_type,
+            //           bits 4-7 = preserved flags.
             user_param5_type: bytes[148] & 0x03,
             user_param6_type: (bytes[148] >> 2) & 0x03,
+            user_param_type_flags: bytes[148] & 0xF0,
             // Byte 149: bits 0-1 = user_param1_type, bits 2-3 = user_param2_type,
             //           bits 4-5 = user_param3_type, bits 6-7 = user_param4_type.
             user_param1_type: bytes[149] & 0x03,
@@ -508,10 +513,16 @@ impl SynthParams {
         })
     }
 
-    /// Serialize synth parameters to a 156-byte array.
-    pub fn to_bytes(&self) -> [u8; Self::SIZE] {
-        let mut out = [0u8; Self::SIZE];
+    /// Serialize synth parameters to a 156-byte array, using `base` as the
+    /// starting buffer. This preserves hardware-specific flag bits (e.g. the
+    /// upper 6 bits of 10-bit parameter high bytes) that are present in blobs
+    /// read from the device.
+    pub fn to_bytes_with_base(&self, base: &[u8; Self::SIZE]) -> [u8; Self::SIZE] {
+        let mut out = *base;
 
+        // Every modeled field is written below, overwriting the base.
+        // Unmodeled bits (e.g. upper 6 bits of 10-bit high bytes) are
+        // preserved from the base via write_10bit's masking behavior.
         out[0..4].copy_from_slice(Self::MAGIC);
         out[4..16].copy_from_slice(self.name.as_bytes());
         out[16] = self.octave;
@@ -615,8 +626,11 @@ impl SynthParams {
         out[145] = self.user_param4;
         out[146] = self.user_param5;
         out[147] = self.user_param6;
-        // Byte 148: bits 0-1 = user_param5_type, bits 2-3 = user_param6_type.
-        out[148] = (self.user_param5_type & 0x03) | ((self.user_param6_type & 0x03) << 2);
+        // Byte 148: bits 0-1 = user_param5_type, bits 2-3 = user_param6_type,
+        //           bits 4-7 = preserved flags.
+        out[148] = (self.user_param5_type & 0x03)
+            | ((self.user_param6_type & 0x03) << 2)
+            | (self.user_param_type_flags & 0xF0);
         // Byte 149: bits 0-1 = param1, 2-3 = param2, 4-5 = param3, 6-7 = param4.
         out[149] = (self.user_param1_type & 0x03)
             | ((self.user_param2_type & 0x03) << 2)
@@ -628,6 +642,15 @@ impl SynthParams {
         out[155] = self.midi_after_touch_assign.to_program_value();
 
         out
+    }
+
+    /// Serialize synth parameters to a 156-byte array.
+    ///
+    /// Note: upper 6 bits of 10-bit field high bytes will be zero.
+    /// Use [`to_bytes_with_base`](Self::to_bytes_with_base) for round-trip
+    /// fidelity with hardware blobs.
+    pub fn to_bytes(&self) -> [u8; Self::SIZE] {
+        self.to_bytes_with_base(&[0u8; Self::SIZE])
     }
 
     /// Attempt to interpret `voice_mode_type` as a [`VoiceModeType`].
@@ -787,6 +810,7 @@ impl Default for SynthParams {
             user_param6: 0,
             user_param5_type: 0,
             user_param6_type: 0,
+            user_param_type_flags: 0,
             user_param1_type: 0,
             user_param2_type: 0,
             user_param3_type: 0,
@@ -1215,6 +1239,19 @@ mod tests {
     fn buf_set_all_user_param_types(buf: &mut [u8], val: u8) {
         buf[148] = (val & 0x03) | ((val & 0x03) << 2);
         buf[149] = (val & 0x03) | ((val & 0x03) << 2) | ((val & 0x03) << 4) | ((val & 0x03) << 6);
+    }
+
+    #[test]
+    fn synth_params_user_param_type_flags_preserved() {
+        let mut blob = make_synth_blob();
+        // Set upper 4 bits of byte 148 to 0xF0.
+        blob[148] = 0x01 | (0x02 << 2) | 0xF0;
+        let params = SynthParams::from_bytes(&blob).unwrap();
+        assert_eq!(params.user_param5_type, 1);
+        assert_eq!(params.user_param6_type, 2);
+        assert_eq!(params.user_param_type_flags, 0xF0);
+        let out = params.to_bytes();
+        assert_eq!(out[148], 0x01 | (0x02 << 2) | 0xF0);
     }
 
     #[test]

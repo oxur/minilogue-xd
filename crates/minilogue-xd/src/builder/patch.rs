@@ -219,18 +219,12 @@ impl PatchBuilder {
 
     /// Builds the final [`ProgramData`] with default sequencer parameters.
     pub fn build(self) -> ProgramData {
-        ProgramData {
-            synth: self.synth,
-            sequencer: SequencerParams::default(),
-        }
+        ProgramData::new(self.synth, SequencerParams::default())
     }
 
     /// Builds the final [`ProgramData`] with a custom sequencer.
     pub fn build_with_sequencer(self, sequencer: SequencerParams) -> ProgramData {
-        ProgramData {
-            synth: self.synth,
-            sequencer,
-        }
+        ProgramData::new(self.synth, sequencer)
     }
 }
 

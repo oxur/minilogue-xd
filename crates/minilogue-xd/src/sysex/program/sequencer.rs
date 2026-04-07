@@ -152,6 +152,9 @@ impl SequencerParams {
     /// Offset within the 1024-byte program blob where the sequencer starts.
     pub const OFFSET: usize = 156;
 
+    /// Expected magic bytes at the start of the sequencer section.
+    pub const MAGIC: &[u8; 6] = b"PREDSQ";
+
     /// Parse sequencer parameters from a byte slice starting at offset 156.
     ///
     /// The input should be the sequencer portion of the blob (868 bytes).
@@ -168,10 +171,19 @@ impl SequencerParams {
             .into());
         }
 
+        // Validate magic header.
+        if &bytes[0..6] != Self::MAGIC {
+            return Err(SysexError::InvalidMagic {
+                expected: "PREDSQ".to_string(),
+                actual: String::from_utf8_lossy(&bytes[0..6]).to_string(),
+            }
+            .into());
+        }
+
         // Offsets are relative to the start of the sequencer section (blob offset 156).
         //
         // Layout (34 bytes header + 832 bytes steps + 2 bytes arp = 868):
-        //   0-5:   reserved (6 bytes)
+        //   0-5:   magic "PREDSQ" (6 bytes)
         //   6-7:   BPM (LE u16, x10)
         //   8:     step_length
         //   9:     step_resolution
@@ -235,11 +247,19 @@ impl SequencerParams {
         })
     }
 
-    /// Serialize sequencer parameters to bytes (868 bytes).
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut out = vec![0u8; Self::SIZE];
+    /// Serialize sequencer parameters to bytes (868 bytes), using `base` as
+    /// the starting buffer. This preserves any hardware-specific bytes that
+    /// are not modeled by this struct.
+    pub fn to_bytes_with_base(&self, base: &[u8]) -> Vec<u8> {
+        assert!(
+            base.len() >= Self::SIZE,
+            "base must be at least {} bytes",
+            Self::SIZE
+        );
+        let mut out = base[..Self::SIZE].to_vec();
 
-        // First 6 bytes: reserved / header (zeros).
+        // First 6 bytes: "PREDSQ" magic header.
+        out[0..6].copy_from_slice(Self::MAGIC);
         write_u16_le(&mut out, 6, self.bpm);
         out[8] = self.step_length;
         out[9] = self.step_resolution;
@@ -274,6 +294,14 @@ impl SequencerParams {
         out[867] = self.arp_rate;
 
         out
+    }
+
+    /// Serialize sequencer parameters to bytes (868 bytes).
+    ///
+    /// Use [`to_bytes_with_base`](Self::to_bytes_with_base) for round-trip
+    /// fidelity with hardware blobs.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.to_bytes_with_base(&vec![0u8; Self::SIZE])
     }
 
     /// Returns the BPM as a floating-point value (e.g. 120.0).
@@ -314,6 +342,7 @@ mod tests {
     /// Build a minimal valid sequencer blob (868 bytes).
     fn make_seq_blob() -> Vec<u8> {
         let mut buf = vec![0u8; SequencerParams::SIZE];
+        buf[0..6].copy_from_slice(b"PREDSQ");
         // BPM = 1200 (120.0 BPM).
         write_u16_le(&mut buf, 6, 1200);
         buf[8] = 16; // step_length
@@ -491,7 +520,8 @@ mod tests {
 
     #[test]
     fn seq_params_empty_sequencer() {
-        let blob = vec![0u8; SequencerParams::SIZE];
+        let mut blob = vec![0u8; SequencerParams::SIZE];
+        blob[0..6].copy_from_slice(b"PREDSQ");
         let params = SequencerParams::from_bytes(&blob).unwrap();
         assert_eq!(params.bpm, 0);
         assert_eq!(params.step_length, 0);
@@ -504,6 +534,12 @@ mod tests {
         // Round-trip.
         let out = params.to_bytes();
         assert_eq!(&out[..], &blob[..]);
+    }
+
+    #[test]
+    fn seq_params_invalid_magic() {
+        let blob = vec![0u8; SequencerParams::SIZE];
+        assert!(SequencerParams::from_bytes(&blob).is_err());
     }
 
     #[test]

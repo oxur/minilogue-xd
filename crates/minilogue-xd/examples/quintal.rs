@@ -407,9 +407,9 @@ fn setup_patch(xd: &mut RealtimeController<MidirOutput>) -> minilogue_xd::Result
     xd.set_vco1_level(0.75)?;
     xd.set_vco2_level(0.65)?;
 
-    // No sync, no ring — clean and open
-    xd.set_sync(Sync::Off)?;
-    xd.set_ring(Ring::Off)?;
+    // Sync + ring with triangles — glassy harmonics
+    xd.set_sync(Sync::On)?;
+    xd.set_ring(Ring::On)?;
 
     // Filter: bright, clean, full keytrack so melody register sparkles
     xd.set_cutoff(0.65)?;
@@ -436,9 +436,9 @@ fn setup_patch(xd: &mut RealtimeController<MidirOutput>) -> minilogue_xd::Result
     xd.set_lfo_int(0.12)?;
     xd.set_lfo_target(LfoTarget::Cutoff)?;
 
-    // Chorus for crystalline width
+    // Ensemble for crystalline width
     xd.set_mod_fx_on(true)?;
-    xd.set_mod_fx_type(ModFxType::Chorus)?;
+    xd.set_mod_fx_type(ModFxType::Ensemble)?;
     xd.set_mod_fx_time(0.45)?;
     xd.set_mod_fx_depth(0.35)?;
 
@@ -587,32 +587,67 @@ fn export(events: &[Event], bpm: f64) -> Result<(), Box<dyn Error>> {
 // Save mode: write patch to a program slot via SysEx
 // -----------------------------------------------------------------------
 
-fn save(_slot: Option<u16>) -> Result<(), Box<dyn Error>> {
-    // NOTE: send_current_program / send_program currently triggers a
-    // DataFormatError NAK from the XD — likely a from_bytes → to_bytes
-    // round-trip fidelity issue in the library. Until that's fixed, we
-    // fall back to setting the patch via real-time CCs, which works
-    // reliably and is immediately audible.
-    let Some(port_name) = device::find_output_port()? else {
+fn save(slot: Option<u16>) -> Result<(), Box<dyn Error>> {
+    use minilogue_xd::sysex::program::ProgramNumber;
+    use minilogue_xd::sysex::transaction::SysexTransaction;
+    use minilogue_xd::transport::MidirInput;
+
+    let Some(out_port) = device::find_output(device::OutputPort::Sound)? else {
         eprintln!("Minilogue XD not found — is it connected via USB?");
         std::process::exit(1);
     };
-    let output = MidirOutput::connect(&port_name)?;
-    let channel = U4::new(0)?;
-    let mut xd = RealtimeController::new(output, channel);
+    let Some(in_port) = device::find_input(device::InputPort::KbdKnob)? else {
+        eprintln!("Minilogue XD input port not found.");
+        std::process::exit(1);
+    };
 
-    println!("Loading \"Quintal xd\" via real-time CCs...");
-    setup_patch(&mut xd)?;
+    println!("Connecting to Minilogue XD...");
+    let mut output = MidirOutput::connect(&out_port)?;
+    let mut input = MidirInput::connect(&in_port)?;
 
-    println!("Done! The patch is now active — play some keys.");
-    println!("To keep it, WRITE to a program slot on the XD (SHIFT + key).");
+    let mut tx = SysexTransaction::new(&mut output, &mut input, U4::new(0)?)
+        .with_timeout(Duration::from_secs(5));
+
+    // Read the current program as a valid base blob, then overlay our patch.
+    // The raw_blob is preserved through from_bytes → to_bytes for perfect
+    // round-trip fidelity with the hardware.
+    println!("Reading current program as base...");
+    let mut data = tx.request_current_program()?;
+    apply_patch_params(&mut data.synth);
+
+    if let Some(slot) = slot {
+        let program = ProgramNumber::new(slot)?;
+        println!(
+            "Writing \"{}\" to program {:03}...",
+            data.synth.name,
+            slot + 1
+        );
+        tx.send_program(program, &data)?;
+        println!("Done! Select program {:03} on the XD to load it.", slot + 1);
+    } else {
+        println!("Loading \"{}\" into current edit buffer...", data.synth.name);
+        tx.send_current_program(&data)?;
+        println!("Done! The patch is now active — play some keys.");
+        println!("To keep it, WRITE to a program slot on the XD (SHIFT + key).");
+    }
+
     Ok(())
 }
 
 /// Apply our patch settings to an existing SynthParams (raw 10-bit values).
+/// Sets EVERY sound-relevant field to avoid inheriting values from the base blob.
 fn apply_patch_params(s: &mut SynthParams) {
     use minilogue_xd::sysex::program::ProgramName;
+
+    // Identity
     s.name = ProgramName::from_string("Quintal xd").unwrap();
+
+    // Voice mode: matches hardware-saved state
+    s.octave = 2; // center (0)
+    s.voice_mode_type = 4; // ArpLatch (as saved by hardware)
+    s.voice_mode_depth = 1;
+
+    // Oscillators
     s.vco1_wave = VcoWave::Tri;
     s.vco1_octave = VcoOctave::Eight;
     s.vco1_pitch = 512;
@@ -621,40 +656,75 @@ fn apply_patch_params(s: &mut SynthParams) {
     s.vco2_octave = VcoOctave::Eight;
     s.vco2_pitch = 518;
     s.vco2_shape = 460;
+    s.sync = true;
+    s.ring = true;
+    s.cross_mod_depth = 0;
+
+    // Multi engine: off (noise type but level 0)
+    s.multi_type = MultiType::Noise;
+    s.multi_level = 0;
+
+    // Mixer
     s.vco1_level = 767;
     s.vco2_level = 665;
-    s.sync = false;
-    s.ring = false;
-    s.cross_mod_depth = 0;
+
+    // Filter
     s.cutoff = 665;
     s.resonance = 123;
     s.cutoff_drive = CutoffDrive::Off;
     s.cutoff_keytrack = CutoffKeytrack::Full;
+
+    // Amp EG
     s.amp_eg_attack = 307;
     s.amp_eg_decay = 256;
     s.amp_eg_sustain = 818;
     s.amp_eg_release = 665;
+
+    // Filter EG
     s.eg_attack = 205;
     s.eg_decay = 358;
     s.eg_int = 256;
     s.eg_target = EgTarget::Cutoff;
+
+    // LFO
     s.lfo_wave = LfoWave::Tri;
     s.lfo_mode = LfoMode::Normal;
     s.lfo_rate = 31;
     s.lfo_int = 123;
     s.lfo_target = LfoTarget::Cutoff;
+
+    // Mod FX: Chorus with time/depth matching setup_patch
     s.mod_fx_on = true;
-    s.mod_fx_type = 0; // Chorus (raw program value)
+    s.mod_fx_type = 1; // Ensemble (as saved by hardware)
+    s.mod_fx_chorus = 0; // Stereo sub-type
+    s.mod_fx_time = 460; // 0.45
+    s.mod_fx_depth = 358; // 0.35
+
+    // Delay
     s.delay_on = true;
     s.delay_sub_type = DelaySubType::Stereo;
     s.delay_time = 460;
     s.delay_depth = 409;
     s.delay_dry_wet = 256;
+
+    // Reverb
     s.reverb_on = true;
     s.reverb_sub_type = ReverbSubType::Space;
-    s.reverb_time = 869;
+    s.reverb_time = 870; // matches hardware (byte 107 = 0x66)
     s.reverb_depth = 767;
     s.reverb_dry_wet = 460;
+
+    // Performance: no portamento, no velocity sensitivity, neutral level
+    s.portamento = 0;
+    s.key_trig = false;
+    s.program_level = 102; // ~80% (Korg default)
+    s.cutoff_velocity = 0;
+    s.amp_velocity = 0;
+    s.bend_range_plus = 2;
+    s.bend_range_minus = 2;
+    s.eg_legato = true;
+    s.lfo_key_sync = true;
+    s.lfo_voice_sync = true;
 }
 
 // -----------------------------------------------------------------------
