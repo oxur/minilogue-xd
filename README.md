@@ -3,7 +3,9 @@
 [![][build-badge]][build]
 [![Crates.io](https://img.shields.io/crates/v/minilogue-xd)](https://crates.io/crates/minilogue-xd)
 [![Docs.rs](https://img.shields.io/docsrs/minilogue-xd)](https://docs.rs/minilogue-xd)
-[![MIT / Apache-2.0](https://img.shields.io/crates/l/minilogue-xd)](LICENSE-MIT)
+[![MIT / Apache-2.0](https://img.shields.io/crates/l/minilogue-xd)](LICENSE)
+
+[![][logo]][logo-large]
 
 A complete Rust library for the Korg Minilogue XD synthesizer, covering 100% of the
 [MIDI Implementation (Revision 1.01)](https://www.korg.com/us/support/download/manual/0/811/4440/) —
@@ -268,5 +270,7 @@ at your option.
 
 [//]: ---Named-Links---
 
+[logo]: assets/images/minilogue-xd-small.png
+[logo-large]: assets/images/minilogue-xd.png
 [build]: https://github.com/oxur/minilogue-xd/actions/workflows/ci.yml
 [build-badge]: https://github.com/oxur/minilogue-xd/actions/workflows/ci.yml/badge.svg
