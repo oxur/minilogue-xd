@@ -116,23 +116,21 @@ impl<'a, O: MidiOutput, I: MidiInput> SysexTransaction<'a, O, I> {
             };
 
             // Complete SysEx in one message — the happy path.
-            if bytes.first() == Some(&0xF0) && bytes.last() == Some(&0xF7) && buf.is_empty() {
-                return Ok(bytes);
-            }
-
-            // Start of a fragmented SysEx.
-            if bytes.first() == Some(&0xF0) && bytes.last() != Some(&0xF7) {
-                buf = bytes;
+            // Strip any interleaved realtime bytes (F8 clock, FE active sensing)
+            // that the MIDI driver may have embedded in the message.
+            if bytes.first() == Some(&0xF0) && buf.is_empty() {
+                let clean: Vec<u8> = bytes.iter().copied().filter(|&b| b <= 0xF7).collect();
+                if clean.last() == Some(&0xF7) {
+                    return Ok(clean);
+                }
+                // Started but not complete — begin accumulating.
+                buf = clean;
                 continue;
             }
 
-            // Continuation of a fragmented SysEx — append non-realtime bytes.
+            // Continuation of a fragmented SysEx — append, filtering realtime.
             if !buf.is_empty() {
-                // Filter out interleaved realtime bytes (F8, FE, etc.)
-                for &b in &bytes {
-                    buf.push(b);
-                }
-                // Check if we now have a complete message.
+                buf.extend(bytes.iter().copied().filter(|&b| b <= 0xF7));
                 if buf.last() == Some(&0xF7) {
                     return Ok(buf);
                 }
