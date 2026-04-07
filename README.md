@@ -1,6 +1,7 @@
 # minilogue-xd
 
 [![][build-badge]][build]
+[![][tag-badge]][tag]
 [![Crates.io](https://img.shields.io/crates/v/minilogue-xd)](https://crates.io/crates/minilogue-xd)
 [![Docs.rs](https://img.shields.io/docsrs/minilogue-xd)](https://docs.rs/minilogue-xd)
 [![MIT / Apache-2.0](https://img.shields.io/crates/l/minilogue-xd)](LICENSE)
@@ -152,6 +153,11 @@ tx.send_user_scale(&scale)?;
 | Poly chain | Note on/off SysEx with sub-semitone pitch encoding |
 | Transport | Clock, Start, Continue, Stop, Song Position Pointer |
 | Device identity | Inquiry request/reply, search device request/reply |
+| Real-time control | Fluent API for all CC/NRPN params with float-to-integer mapping |
+| SysEx transactions | Request/response flows with timeout and ACK/NAK handling |
+| Patch builder | Ergonomic builder for ProgramData (VCOs, filter, EGs, LFO, FX) |
+| Sequence builder | Builder for SequencerParams (BPM, steps, gate times, ARP) |
+| MIDI file export | Standard MIDI File (Format 0) with patch CCs, automation, and CC legend |
 
 ---
 
@@ -177,7 +183,8 @@ minilogue-xd
 │   ├── poly_chain  Poly chain note on/off
 │   └── transaction Request/response manager with timeout and ACK/NAK handling
 ├── controller      Real-time parameter controller (fluent API)
-└── builder         PatchBuilder and SequenceBuilder
+├── builder         PatchBuilder and SequenceBuilder
+└── midi_file       Standard MIDI File (Format 0) export with CC legend
 ```
 
 ---
@@ -275,3 +282,5 @@ at your option.
 [logo-large]: assets/images/minilogue-xd.png
 [build]: https://github.com/oxur/minilogue-xd/actions/workflows/ci.yml
 [build-badge]: https://github.com/oxur/minilogue-xd/actions/workflows/ci.yml/badge.svg
+[tag-badge]: https://img.shields.io/github/tag/oxur/minilogue-xd.svg
+[tag]: https://github.com/oxur/minilogue-xd/tags
