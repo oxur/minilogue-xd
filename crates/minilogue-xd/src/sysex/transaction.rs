@@ -107,8 +107,10 @@ impl<'a, O: MidiOutput, I: MidiInput> SysexTransaction<'a, O, I> {
                 return Err(SysexError::Timeout(self.timeout).into());
             }
             match self.input.receive(remaining)? {
-                Some(bytes) if bytes.first() == Some(&0xF0) => return Ok(bytes),
-                Some(_) => continue, // skip clock, active sensing, etc.
+                Some(bytes) if bytes.first() == Some(&0xF0) && bytes.last() == Some(&0xF7) => {
+                    return Ok(bytes)
+                }
+                Some(_) => continue, // skip clock, active sensing, partial fragments
                 None => return Err(SysexError::Timeout(self.timeout).into()),
             }
         }
