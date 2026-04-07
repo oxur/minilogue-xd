@@ -21,8 +21,84 @@
 use std::io::Write;
 
 use crate::param::enums::MultiType;
+use std::collections::BTreeSet;
+
 use crate::param::SteppedParam;
 use crate::sysex::program::SynthParams;
+
+// ---------------------------------------------------------------------------
+// CC legend — human-readable names for Minilogue XD CC numbers
+// ---------------------------------------------------------------------------
+
+/// Returns the Minilogue XD parameter name for a CC number, if known.
+fn cc_name(cc: u8) -> Option<&'static str> {
+    match cc {
+        0 => Some("Bank Select MSB"),
+        1 => Some("Modulation 1 (Joystick +Y)"),
+        2 => Some("Modulation 2 (Joystick -Y)"),
+        5 => Some("Portamento Time"),
+        6 => Some("Data Entry MSB"),
+        16 => Some("Amp EG Attack"),
+        17 => Some("Amp EG Decay"),
+        18 => Some("Amp EG Sustain"),
+        19 => Some("Amp EG Release"),
+        20 => Some("EG Attack"),
+        21 => Some("EG Decay"),
+        22 => Some("EG Int"),
+        23 => Some("EG Target"),
+        24 => Some("LFO Rate"),
+        26 => Some("LFO Int"),
+        27 => Some("Voice Mode Depth"),
+        28 => Some("Mod FX Time"),
+        29 => Some("Mod FX Depth"),
+        32 => Some("Bank Select LSB"),
+        33 => Some("Multi Level"),
+        34 => Some("VCO 1 Pitch"),
+        35 => Some("VCO 2 Pitch"),
+        36 => Some("VCO 1 Shape"),
+        37 => Some("VCO 2 Shape"),
+        39 => Some("VCO 1 Level"),
+        40 => Some("VCO 2 Level"),
+        41 => Some("Cross Mod Depth"),
+        43 => Some("Cutoff"),
+        44 => Some("Resonance"),
+        48 => Some("VCO 1 Octave"),
+        49 => Some("VCO 2 Octave"),
+        50 => Some("VCO 1 Wave"),
+        51 => Some("VCO 2 Wave"),
+        53 => Some("Multi Type"),
+        54 => Some("Multi Shape"),
+        56 => Some("LFO Target"),
+        57 => Some("LFO Wave"),
+        58 => Some("LFO Mode"),
+        63 => Some("Data Entry LSB (10-bit low 3 bits)"),
+        64 => Some("Damper / Hold"),
+        80 => Some("Sync"),
+        81 => Some("Ring"),
+        83 => Some("Cutoff Keytrack"),
+        84 => Some("Cutoff Drive"),
+        88 => Some("Mod FX Type"),
+        89 => Some("Delay Sub Type"),
+        90 => Some("Reverb Sub Type"),
+        92 => Some("Mod FX On/Off"),
+        93 => Some("Delay On/Off"),
+        94 => Some("Reverb On/Off"),
+        96 => Some("Mod FX Sub Type"),
+        98 => Some("NRPN LSB"),
+        99 => Some("NRPN MSB"),
+        103 => Some("Multi Select"),
+        104 => Some("Multi Shift Shape"),
+        105 => Some("Delay Time"),
+        106 => Some("Delay Depth"),
+        107 => Some("Delay Dry/Wet"),
+        108 => Some("Reverb Time"),
+        109 => Some("Reverb Depth"),
+        110 => Some("Reverb Dry/Wet"),
+        118 => Some("CV In 1"),
+        119 => Some("CV In 2"),
+        _ => None,
+    }
+}
 
 // ---------------------------------------------------------------------------
 // VLQ encoding
@@ -80,6 +156,8 @@ pub struct MidiFileBuilder {
     tempo_bpm: f64,
     channel: u8,
     events: Vec<MidiFileEvent>,
+    /// CC numbers used in this file (for legend generation).
+    used_ccs: BTreeSet<u8>,
 }
 
 impl MidiFileBuilder {
@@ -92,6 +170,7 @@ impl MidiFileBuilder {
             tempo_bpm,
             channel: 0,
             events: Vec::new(),
+            used_ccs: BTreeSet::new(),
         }
     }
 
@@ -137,6 +216,7 @@ impl MidiFileBuilder {
     /// Adds a Control Change event at `tick`.
     pub fn cc(mut self, tick: u64, controller: u8, value: u8) -> Self {
         let ch = self.channel;
+        self.used_ccs.insert(controller & 0x7F);
         self.events.push(MidiFileEvent {
             tick,
             bytes: vec![0xB0 | ch, controller & 0x7F, value & 0x7F],
@@ -215,6 +295,8 @@ impl MidiFileBuilder {
         let clamped = value.min(1023);
         let lsb = (clamped & 0x07) as u8;
         let msb = ((clamped >> 3) & 0x7F) as u8;
+        self.used_ccs.insert(63);
+        self.used_ccs.insert(cc_number);
         self.events.push(MidiFileEvent {
             tick,
             bytes: vec![0xB0 | ch, 63, lsb],
@@ -240,6 +322,7 @@ impl MidiFileBuilder {
     /// Uses the enum's TX wire value via [`SteppedParam::to_tx_value`].
     pub fn stepped_cc<T: SteppedParam>(mut self, tick: u64, cc_number: u8, value: T) -> Self {
         let ch = self.channel;
+        self.used_ccs.insert(cc_number);
         self.events.push(MidiFileEvent {
             tick,
             bytes: vec![0xB0 | ch, cc_number, value.to_tx_value()],
@@ -252,6 +335,7 @@ impl MidiFileBuilder {
     /// `true` sends value 127, `false` sends 0.
     pub fn on_off_cc(mut self, tick: u64, cc_number: u8, on: bool) -> Self {
         let ch = self.channel;
+        self.used_ccs.insert(cc_number);
         self.events.push(MidiFileEvent {
             tick,
             bytes: vec![0xB0 | ch, cc_number, if on { 127 } else { 0 }],
@@ -313,9 +397,18 @@ impl MidiFileBuilder {
 
         // Pushes a 10-bit CC pair: CC63 with the 3 LSBs, then the main CC
         // with the 7 MSBs.
-        fn emit_10bit(events: &mut Vec<MidiFileEvent>, ch: u8, cc_num: u8, value: u16, t: u64) {
+        fn emit_10bit(
+            events: &mut Vec<MidiFileEvent>,
+            used: &mut BTreeSet<u8>,
+            ch: u8,
+            cc_num: u8,
+            value: u16,
+            t: u64,
+        ) {
             let lsb = (value & 0x07) as u8;
             let msb = ((value >> 3) & 0x7F) as u8;
+            used.insert(63);
+            used.insert(cc_num);
             events.push(MidiFileEvent {
                 tick: t,
                 bytes: vec![0xB0 | ch, 63, lsb],
@@ -328,25 +421,43 @@ impl MidiFileBuilder {
 
         fn emit_stepped<T: SteppedParam>(
             events: &mut Vec<MidiFileEvent>,
+            used: &mut BTreeSet<u8>,
             ch: u8,
             cc_num: u8,
             val: T,
             t: u64,
         ) {
+            used.insert(cc_num);
             events.push(MidiFileEvent {
                 tick: t,
                 bytes: vec![0xB0 | ch, cc_num, val.to_tx_value()],
             });
         }
 
-        fn emit_bool(events: &mut Vec<MidiFileEvent>, ch: u8, cc_num: u8, on: bool, t: u64) {
+        fn emit_bool(
+            events: &mut Vec<MidiFileEvent>,
+            used: &mut BTreeSet<u8>,
+            ch: u8,
+            cc_num: u8,
+            on: bool,
+            t: u64,
+        ) {
+            used.insert(cc_num);
             events.push(MidiFileEvent {
                 tick: t,
                 bytes: vec![0xB0 | ch, cc_num, if on { 127 } else { 0 }],
             });
         }
 
-        fn emit_cc(events: &mut Vec<MidiFileEvent>, ch: u8, cc_num: u8, value: u8, t: u64) {
+        fn emit_cc(
+            events: &mut Vec<MidiFileEvent>,
+            used: &mut BTreeSet<u8>,
+            ch: u8,
+            cc_num: u8,
+            value: u8,
+            t: u64,
+        ) {
+            used.insert(cc_num);
             events.push(MidiFileEvent {
                 tick: t,
                 bytes: vec![0xB0 | ch, cc_num, value & 0x7F],
@@ -356,39 +467,116 @@ impl MidiFileBuilder {
         // ----- Stepped enum parameters -----
 
         // VCO1
-        emit_stepped(&mut self.events, ch, 50, synth.vco1_wave, t); // CC50: VCO1 Wave
-        emit_stepped(&mut self.events, ch, 48, synth.vco1_octave, t); // CC48: VCO1 Octave
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            50,
+            synth.vco1_wave,
+            t,
+        ); // CC50: VCO1 Wave
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            48,
+            synth.vco1_octave,
+            t,
+        ); // CC48: VCO1 Octave
 
         // VCO2
-        emit_stepped(&mut self.events, ch, 51, synth.vco2_wave, t); // CC51: VCO2 Wave
-        emit_stepped(&mut self.events, ch, 49, synth.vco2_octave, t); // CC49: VCO2 Octave
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            51,
+            synth.vco2_wave,
+            t,
+        ); // CC51: VCO2 Wave
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            49,
+            synth.vco2_octave,
+            t,
+        ); // CC49: VCO2 Octave
 
         // Sync/Ring (Sync: CC80, Ring: CC81)
-        emit_bool(&mut self.events, ch, 80, synth.sync, t);
-        emit_bool(&mut self.events, ch, 81, synth.ring, t);
+        emit_bool(&mut self.events, &mut self.used_ccs, ch, 80, synth.sync, t);
+        emit_bool(&mut self.events, &mut self.used_ccs, ch, 81, synth.ring, t);
 
         // Multi-engine type (CC53)
-        emit_stepped(&mut self.events, ch, 53, synth.multi_type, t);
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            53,
+            synth.multi_type,
+            t,
+        );
 
         // EG target (CC23)
-        emit_stepped(&mut self.events, ch, 23, synth.eg_target, t);
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            23,
+            synth.eg_target,
+            t,
+        );
 
         // LFO
-        emit_stepped(&mut self.events, ch, 57, synth.lfo_wave, t); // CC57: LFO Wave
-        emit_stepped(&mut self.events, ch, 58, synth.lfo_mode, t); // CC58: LFO Mode
-        emit_stepped(&mut self.events, ch, 56, synth.lfo_target, t); // CC56: LFO Target
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            57,
+            synth.lfo_wave,
+            t,
+        ); // CC57: LFO Wave
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            58,
+            synth.lfo_mode,
+            t,
+        ); // CC58: LFO Mode
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            56,
+            synth.lfo_target,
+            t,
+        ); // CC56: LFO Target
 
         // Filter drive/keytrack
-        emit_stepped(&mut self.events, ch, 84, synth.cutoff_drive, t); // CC84
-        emit_stepped(&mut self.events, ch, 83, synth.cutoff_keytrack, t); // CC83
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            84,
+            synth.cutoff_drive,
+            t,
+        ); // CC84
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            83,
+            synth.cutoff_keytrack,
+            t,
+        ); // CC83
 
         // FX types
         // mod_fx_type is stored as raw u8 (1-based in blob; see note P12).
         // Use the helper to convert to the typed enum.
         if let Ok(fx) = synth.mod_fx_type_enum() {
-            emit_stepped(&mut self.events, ch, 88, fx, t); // CC88: Mod FX Type
+            emit_stepped(&mut self.events, &mut self.used_ccs, ch, 88, fx, t); // CC88: Mod FX Type
         } else {
-            emit_cc(&mut self.events, ch, 88, 0, t);
+            emit_cc(&mut self.events, &mut self.used_ccs, ch, 88, 0, t);
         }
 
         // Mod FX sub-type (CC96) — context-dependent, emit the relevant sub-type
@@ -401,25 +589,88 @@ impl MidiFileBuilder {
             5 => synth.mod_fx_user,
             _ => 0,
         };
-        emit_cc(&mut self.events, ch, 96, mod_fx_sub, t);
+        emit_cc(&mut self.events, &mut self.used_ccs, ch, 96, mod_fx_sub, t);
 
-        emit_stepped(&mut self.events, ch, 89, synth.delay_sub_type, t); // CC89
-        emit_stepped(&mut self.events, ch, 90, synth.reverb_sub_type, t); // CC90
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            89,
+            synth.delay_sub_type,
+            t,
+        ); // CC89
+        emit_stepped(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            90,
+            synth.reverb_sub_type,
+            t,
+        ); // CC90
 
         // ----- 10-bit continuous parameters -----
 
         // VCO1
-        emit_10bit(&mut self.events, ch, 34, synth.vco1_pitch, t); // CC34
-        emit_10bit(&mut self.events, ch, 36, synth.vco1_shape, t); // CC36
-        emit_10bit(&mut self.events, ch, 39, synth.vco1_level, t); // CC39
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            34,
+            synth.vco1_pitch,
+            t,
+        ); // CC34
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            36,
+            synth.vco1_shape,
+            t,
+        ); // CC36
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            39,
+            synth.vco1_level,
+            t,
+        ); // CC39
 
         // VCO2
-        emit_10bit(&mut self.events, ch, 35, synth.vco2_pitch, t); // CC35
-        emit_10bit(&mut self.events, ch, 37, synth.vco2_shape, t); // CC37
-        emit_10bit(&mut self.events, ch, 40, synth.vco2_level, t); // CC40
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            35,
+            synth.vco2_pitch,
+            t,
+        ); // CC35
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            37,
+            synth.vco2_shape,
+            t,
+        ); // CC37
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            40,
+            synth.vco2_level,
+            t,
+        ); // CC40
 
         // Cross-mod depth (CC41)
-        emit_10bit(&mut self.events, ch, 41, synth.cross_mod_depth, t);
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            41,
+            synth.cross_mod_depth,
+            t,
+        );
 
         // Multi-engine: shape is context-dependent on multi_type
         let multi_shape = match synth.multi_type {
@@ -427,57 +678,253 @@ impl MidiFileBuilder {
             MultiType::Vpm => synth.shape_vpm,
             MultiType::User => synth.shape_user,
         };
-        emit_10bit(&mut self.events, ch, 54, multi_shape, t); // CC54
+        emit_10bit(&mut self.events, &mut self.used_ccs, ch, 54, multi_shape, t); // CC54
 
         let multi_shift = match synth.multi_type {
             MultiType::Noise => synth.shift_shape_noise,
             MultiType::Vpm => synth.shift_shape_vpm,
             MultiType::User => synth.shift_shape_user,
         };
-        emit_10bit(&mut self.events, ch, 104, multi_shift, t); // CC104
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            104,
+            multi_shift,
+            t,
+        ); // CC104
 
-        emit_10bit(&mut self.events, ch, 33, synth.multi_level, t); // CC33
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            33,
+            synth.multi_level,
+            t,
+        ); // CC33
 
         // Filter
-        emit_10bit(&mut self.events, ch, 43, synth.cutoff, t); // CC43
-        emit_10bit(&mut self.events, ch, 44, synth.resonance, t); // CC44
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            43,
+            synth.cutoff,
+            t,
+        ); // CC43
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            44,
+            synth.resonance,
+            t,
+        ); // CC44
 
         // Amp EG
-        emit_10bit(&mut self.events, ch, 16, synth.amp_eg_attack, t); // CC16
-        emit_10bit(&mut self.events, ch, 17, synth.amp_eg_decay, t); // CC17
-        emit_10bit(&mut self.events, ch, 18, synth.amp_eg_sustain, t); // CC18
-        emit_10bit(&mut self.events, ch, 19, synth.amp_eg_release, t); // CC19
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            16,
+            synth.amp_eg_attack,
+            t,
+        ); // CC16
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            17,
+            synth.amp_eg_decay,
+            t,
+        ); // CC17
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            18,
+            synth.amp_eg_sustain,
+            t,
+        ); // CC18
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            19,
+            synth.amp_eg_release,
+            t,
+        ); // CC19
 
         // EG
-        emit_10bit(&mut self.events, ch, 20, synth.eg_attack, t); // CC20
-        emit_10bit(&mut self.events, ch, 21, synth.eg_decay, t); // CC21
-        emit_10bit(&mut self.events, ch, 22, synth.eg_int, t); // CC22
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            20,
+            synth.eg_attack,
+            t,
+        ); // CC20
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            21,
+            synth.eg_decay,
+            t,
+        ); // CC21
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            22,
+            synth.eg_int,
+            t,
+        ); // CC22
 
         // LFO
-        emit_10bit(&mut self.events, ch, 24, synth.lfo_rate, t); // CC24
-        emit_10bit(&mut self.events, ch, 26, synth.lfo_int, t); // CC26
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            24,
+            synth.lfo_rate,
+            t,
+        ); // CC24
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            26,
+            synth.lfo_int,
+            t,
+        ); // CC26
 
         // Mod FX
-        emit_10bit(&mut self.events, ch, 28, synth.mod_fx_time, t); // CC28
-        emit_10bit(&mut self.events, ch, 29, synth.mod_fx_depth, t); // CC29
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            28,
+            synth.mod_fx_time,
+            t,
+        ); // CC28
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            29,
+            synth.mod_fx_depth,
+            t,
+        ); // CC29
 
         // Delay
-        emit_10bit(&mut self.events, ch, 105, synth.delay_time, t); // CC105
-        emit_10bit(&mut self.events, ch, 106, synth.delay_depth, t); // CC106
-        emit_10bit(&mut self.events, ch, 107, synth.delay_dry_wet, t); // CC107
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            105,
+            synth.delay_time,
+            t,
+        ); // CC105
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            106,
+            synth.delay_depth,
+            t,
+        ); // CC106
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            107,
+            synth.delay_dry_wet,
+            t,
+        ); // CC107
 
         // Reverb
-        emit_10bit(&mut self.events, ch, 108, synth.reverb_time, t); // CC108
-        emit_10bit(&mut self.events, ch, 109, synth.reverb_depth, t); // CC109
-        emit_10bit(&mut self.events, ch, 110, synth.reverb_dry_wet, t); // CC110
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            108,
+            synth.reverb_time,
+            t,
+        ); // CC108
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            109,
+            synth.reverb_depth,
+            t,
+        ); // CC109
+        emit_10bit(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            110,
+            synth.reverb_dry_wet,
+            t,
+        ); // CC110
 
         // ----- On/Off switches -----
 
-        emit_bool(&mut self.events, ch, 92, synth.mod_fx_on, t); // CC92
-        emit_bool(&mut self.events, ch, 93, synth.delay_on, t); // CC93
-        emit_bool(&mut self.events, ch, 94, synth.reverb_on, t); // CC94
+        emit_bool(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            92,
+            synth.mod_fx_on,
+            t,
+        ); // CC92
+        emit_bool(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            93,
+            synth.delay_on,
+            t,
+        ); // CC93
+        emit_bool(
+            &mut self.events,
+            &mut self.used_ccs,
+            ch,
+            94,
+            synth.reverb_on,
+            t,
+        ); // CC94
 
         self
+    }
+
+    /// Generates a human-readable legend of all CC numbers used in this
+    /// MIDI file, with their Minilogue XD parameter names.
+    ///
+    /// Useful for documenting what each CC automation lane controls.
+    /// Returns a multi-line string sorted by CC number.
+    ///
+    /// # Example output
+    ///
+    /// ```text
+    /// Minilogue XD MIDI CC Legend
+    /// ===========================
+    /// CC  16  Amp EG Attack
+    /// CC  17  Amp EG Decay
+    /// CC  43  Cutoff
+    /// CC  44  Resonance
+    /// CC  63  Data Entry LSB (10-bit low 3 bits)
+    /// ```
+    pub fn legend(&self) -> String {
+        let mut lines = Vec::new();
+        lines.push("Minilogue XD MIDI CC Legend".to_string());
+        lines.push("===========================".to_string());
+        for &cc in &self.used_ccs {
+            let name = cc_name(cc).unwrap_or("(unknown)");
+            lines.push(format!("CC {:>3}  {}", cc, name));
+        }
+        lines.join("\n")
     }
 
     /// Produces the complete Standard MIDI File (Format 0) as a byte vector.

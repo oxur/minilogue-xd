@@ -93,6 +93,11 @@ fn main() -> std::io::Result<()> {
         }
     }
 
+    // Write the legend file first (before build() consumes the builder)
+    let legend = builder.legend();
+    std::fs::write("berlin_school-legend.txt", &legend)?;
+    println!("Wrote berlin_school-legend.txt");
+
     let midi_data = builder.build();
     std::fs::write("berlin_school.mid", &midi_data)?;
     println!(
