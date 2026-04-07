@@ -243,6 +243,7 @@ The [`examples/`](crates/minilogue-xd/examples/) directory contains runnable dem
 - **[`test_drive`](crates/minilogue-xd/examples/test_drive.rs)** — Connect to the XD, set up a pad sound, and play a chord progression
 - **[`berlin_school`](crates/minilogue-xd/examples/berlin_school.rs)** — Tangerine Dream–style Berlin School sequencer with evolving filter sweeps, tape echo, key modulation (E minor → C minor → E minor), and velocity fade
 - **[`export_midi`](crates/minilogue-xd/examples/export_midi.rs)** — Export the Berlin School sequence as a Standard MIDI File (`.mid`) with patch CCs, cutoff automation, and a CC legend text file — ready for notation software or any DAW
+- **[`read_patch`](crates/minilogue-xd/examples/read_patch.rs)** — Read a stored program from the synth via SysEx and display all parameters (oscillators, filter, envelopes, LFO, effects, sequencer)
 
 Run them with:
 
