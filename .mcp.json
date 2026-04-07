@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "music-theory": {
+      "type": "http",
+      "url": "http://localhost:5099/mcp"
+    }
+  }
+}

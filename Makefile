@@ -218,6 +218,15 @@ docs:
 	@echo " * file://$(shell pwd)/$(DOCS_PATH)/index.html"
 	@echo
 
+# MCP server
+MUSIC_THEORY_MCP := $(HOME)/lab/music-comp/ai-music-theory/mcp-server/bin/music-theory-mcp
+MUSIC_THEORY_PORT := 5099
+
+.PHONY: mcp-server
+mcp-server:
+	@echo "$(BLUE)Starting music theory MCP server on port $(MUSIC_THEORY_PORT)...$(RESET)"
+	@$(MUSIC_THEORY_MCP) serve --http --port $(MUSIC_THEORY_PORT)
+
 # Utility targets
 .PHONY: tracked-files
 tracked-files:
