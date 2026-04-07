@@ -48,3 +48,15 @@ required-features = ["midi-io"]
 
 [[example]]
 name = "export_midi"
+
+[[example]]
+name = "quintal"
+required-features = ["midi-io"]
+
+[[example]]
+name = "read_edit_buffer"
+required-features = ["midi-io"]
+
+[[example]]
+name = "sysex_roundtrip_diag"
+required-features = ["midi-io"]
