@@ -97,12 +97,26 @@ impl<'a, O: MidiOutput, I: MidiInput> SysexTransaction<'a, O, I> {
     /// (current program, global, tuning). It is *not* suitable for stored
     /// program dumps, which have the program number outside the encoded
     /// payload.
+    /// Receive the next SysEx message, skipping over realtime messages
+    /// (clock F8, active sensing FE, etc.) that the synth may interleave.
+    fn receive_sysex(&mut self) -> Result<Vec<u8>> {
+        let deadline = std::time::Instant::now() + self.timeout;
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            if remaining.is_zero() {
+                return Err(SysexError::Timeout(self.timeout).into());
+            }
+            match self.input.receive(remaining)? {
+                Some(bytes) if bytes.first() == Some(&0xF0) => return Ok(bytes),
+                Some(_) => continue, // skip clock, active sensing, etc.
+                None => return Err(SysexError::Timeout(self.timeout).into()),
+            }
+        }
+    }
+
     fn request_response(&mut self, request: &[u8], expected_fn: u8) -> Result<SysexFrame> {
         self.output.send(request)?;
-        let response_bytes = self
-            .input
-            .receive(self.timeout)?
-            .ok_or(SysexError::Timeout(self.timeout))?;
+        let response_bytes = self.receive_sysex()?;
 
         let frame = parse_sysex(&response_bytes)?;
 
@@ -127,10 +141,7 @@ impl<'a, O: MidiOutput, I: MidiInput> SysexTransaction<'a, O, I> {
     /// where the program number precedes the 7-bit encoded data).
     fn raw_request_response(&mut self, request: &[u8]) -> Result<Vec<u8>> {
         self.output.send(request)?;
-        let response_bytes = self
-            .input
-            .receive(self.timeout)?
-            .ok_or(SysexError::Timeout(self.timeout))?;
+        let response_bytes = self.receive_sysex()?;
 
         // Try to detect NAK status in the response. A NAK/ACK frame is a
         // minimal SysEx frame with just the status byte as the function ID.
@@ -152,10 +163,7 @@ impl<'a, O: MidiOutput, I: MidiInput> SysexTransaction<'a, O, I> {
     /// Send a data dump and wait for an ACK/NAK status response.
     fn send_and_wait_ack(&mut self, data: &[u8]) -> Result<()> {
         self.output.send(data)?;
-        let response_bytes = self
-            .input
-            .receive(self.timeout)?
-            .ok_or(SysexError::Timeout(self.timeout))?;
+        let response_bytes = self.receive_sysex()?;
 
         let frame = parse_sysex(&response_bytes)?;
 
@@ -318,10 +326,7 @@ impl<'a, O: MidiOutput, I: MidiInput> SysexTransaction<'a, O, I> {
     pub fn query_identity(&mut self) -> Result<IdentityReply> {
         let request = identity::build_identity_request(self.channel);
         self.output.send(&request)?;
-        let response = self
-            .input
-            .receive(self.timeout)?
-            .ok_or(SysexError::Timeout(self.timeout))?;
+        let response = self.receive_sysex()?;
         identity::parse_identity_reply(&response)
     }
 }

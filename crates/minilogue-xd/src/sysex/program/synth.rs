@@ -10,8 +10,8 @@ use crate::error::{Error, Result, SysexError};
 use crate::param::enums::{
     CutoffDrive, CutoffKeytrack, CvInMode, DelaySubType, EgTarget, LfoMode, LfoTarget,
     LfoTargetOsc, LfoWave, MicroTuning, ModAssignTarget, ModFxType, MultiRouting, MultiSelectNoise,
-    MultiSelectUser, MultiSelectVpm, MultiType, PortamentoMode, ReverbSubType, UserParamType,
-    VcoOctave, VcoWave, VoiceModeType,
+    MultiSelectUser, MultiSelectVpm, MultiType, PortamentoMode, ReverbSubType, VcoOctave, VcoWave,
+    VoiceModeType,
 };
 use crate::param::SteppedParam;
 use crate::sysex::helpers::{read_10bit, write_10bit};
@@ -326,17 +326,23 @@ pub struct SynthParams {
     /// User parameter 6 (0--200).
     pub user_param6: u8,
     /// User parameter 5 display type.
-    pub user_param5_type: UserParamType,
+    /// User param 5 type (0=Percent, 1=Bipolar, 2=Select, 3=reserved).
+    pub user_param5_type: u8,
     /// User parameter 6 display type.
-    pub user_param6_type: UserParamType,
+    /// User param 6 type (0=Percent, 1=Bipolar, 2=Select, 3=reserved).
+    pub user_param6_type: u8,
     /// User parameter 1 display type.
-    pub user_param1_type: UserParamType,
+    /// User param 1 type (0=Percent, 1=Bipolar, 2=Select, 3=reserved).
+    pub user_param1_type: u8,
     /// User parameter 2 display type.
-    pub user_param2_type: UserParamType,
+    /// User param 2 type (0=Percent, 1=Bipolar, 2=Select, 3=reserved).
+    pub user_param2_type: u8,
     /// User parameter 3 display type.
-    pub user_param3_type: UserParamType,
+    /// User param 3 type (0=Percent, 1=Bipolar, 2=Select, 3=reserved).
+    pub user_param3_type: u8,
     /// User parameter 4 display type.
-    pub user_param4_type: UserParamType,
+    /// User param 4 type (0=Percent, 1=Bipolar, 2=Select, 3=reserved).
+    pub user_param4_type: u8,
     /// Program transpose (1--25, maps to −12..+12).
     pub program_transpose: u8,
     /// Delay dry/wet (10-bit).
@@ -487,14 +493,14 @@ impl SynthParams {
             user_param5: bytes[146],
             user_param6: bytes[147],
             // Byte 148: bits 0-1 = user_param5_type, bits 2-3 = user_param6_type.
-            user_param5_type: UserParamType::from_program_value(bytes[148] & 0x03)?,
-            user_param6_type: UserParamType::from_program_value((bytes[148] >> 2) & 0x03)?,
+            user_param5_type: bytes[148] & 0x03,
+            user_param6_type: (bytes[148] >> 2) & 0x03,
             // Byte 149: bits 0-1 = user_param1_type, bits 2-3 = user_param2_type,
             //           bits 4-5 = user_param3_type, bits 6-7 = user_param4_type.
-            user_param1_type: UserParamType::from_program_value(bytes[149] & 0x03)?,
-            user_param2_type: UserParamType::from_program_value((bytes[149] >> 2) & 0x03)?,
-            user_param3_type: UserParamType::from_program_value((bytes[149] >> 4) & 0x03)?,
-            user_param4_type: UserParamType::from_program_value((bytes[149] >> 6) & 0x03)?,
+            user_param1_type: bytes[149] & 0x03,
+            user_param2_type: (bytes[149] >> 2) & 0x03,
+            user_param3_type: (bytes[149] >> 4) & 0x03,
+            user_param4_type: (bytes[149] >> 6) & 0x03,
             program_transpose: bytes[150],
             delay_dry_wet: read_10bit(bytes, 151),
             reverb_dry_wet: read_10bit(bytes, 153),
@@ -610,13 +616,12 @@ impl SynthParams {
         out[146] = self.user_param5;
         out[147] = self.user_param6;
         // Byte 148: bits 0-1 = user_param5_type, bits 2-3 = user_param6_type.
-        out[148] = (self.user_param5_type.to_program_value() & 0x03)
-            | ((self.user_param6_type.to_program_value() & 0x03) << 2);
+        out[148] = (self.user_param5_type & 0x03) | ((self.user_param6_type & 0x03) << 2);
         // Byte 149: bits 0-1 = param1, 2-3 = param2, 4-5 = param3, 6-7 = param4.
-        out[149] = (self.user_param1_type.to_program_value() & 0x03)
-            | ((self.user_param2_type.to_program_value() & 0x03) << 2)
-            | ((self.user_param3_type.to_program_value() & 0x03) << 4)
-            | ((self.user_param4_type.to_program_value() & 0x03) << 6);
+        out[149] = (self.user_param1_type & 0x03)
+            | ((self.user_param2_type & 0x03) << 2)
+            | ((self.user_param3_type & 0x03) << 4)
+            | ((self.user_param4_type & 0x03) << 6);
         out[150] = self.program_transpose;
         write_10bit(&mut out, 151, self.delay_dry_wet);
         write_10bit(&mut out, 153, self.reverb_dry_wet);
@@ -780,12 +785,12 @@ impl Default for SynthParams {
             user_param4: 0,
             user_param5: 0,
             user_param6: 0,
-            user_param5_type: UserParamType::Percent,
-            user_param6_type: UserParamType::Percent,
-            user_param1_type: UserParamType::Percent,
-            user_param2_type: UserParamType::Percent,
-            user_param3_type: UserParamType::Percent,
-            user_param4_type: UserParamType::Percent,
+            user_param5_type: 0,
+            user_param6_type: 0,
+            user_param1_type: 0,
+            user_param2_type: 0,
+            user_param3_type: 0,
+            user_param4_type: 0,
             program_transpose: 13, // center (0)
             delay_dry_wet: 512,
             reverb_dry_wet: 512,
@@ -1062,12 +1067,12 @@ mod tests {
         assert_eq!(params.reverb_sub_type, ReverbSubType::Plate);
         assert_eq!(params.bend_range_plus, 12);
         assert_eq!(params.joystick_assign_plus, ModAssignTarget::Cutoff);
-        assert_eq!(params.user_param5_type, UserParamType::Bipolar);
-        assert_eq!(params.user_param6_type, UserParamType::Select);
-        assert_eq!(params.user_param1_type, UserParamType::Percent);
-        assert_eq!(params.user_param2_type, UserParamType::Bipolar);
-        assert_eq!(params.user_param3_type, UserParamType::Select);
-        assert_eq!(params.user_param4_type, UserParamType::Percent);
+        assert_eq!(params.user_param5_type, 1);
+        assert_eq!(params.user_param6_type, 2);
+        assert_eq!(params.user_param1_type, 0);
+        assert_eq!(params.user_param2_type, 1);
+        assert_eq!(params.user_param3_type, 2);
+        assert_eq!(params.user_param4_type, 0);
         assert_eq!(
             params.midi_after_touch_assign,
             ModAssignTarget::PortamentoTime
@@ -1196,12 +1201,12 @@ mod tests {
         // Set all user param types to Select (2).
         buf_set_all_user_param_types(&mut blob, 2);
         let params = SynthParams::from_bytes(&blob).unwrap();
-        assert_eq!(params.user_param1_type, UserParamType::Select);
-        assert_eq!(params.user_param2_type, UserParamType::Select);
-        assert_eq!(params.user_param3_type, UserParamType::Select);
-        assert_eq!(params.user_param4_type, UserParamType::Select);
-        assert_eq!(params.user_param5_type, UserParamType::Select);
-        assert_eq!(params.user_param6_type, UserParamType::Select);
+        assert_eq!(params.user_param1_type, 2);
+        assert_eq!(params.user_param2_type, 2);
+        assert_eq!(params.user_param3_type, 2);
+        assert_eq!(params.user_param4_type, 2);
+        assert_eq!(params.user_param5_type, 2);
+        assert_eq!(params.user_param6_type, 2);
         let out = params.to_bytes();
         assert_eq!(out[148], 0x02 | (0x02 << 2));
         assert_eq!(out[149], 0x02 | (0x02 << 2) | (0x02 << 4) | (0x02 << 6));

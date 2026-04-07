@@ -39,4 +39,8 @@ name = "berlin_school"
 required-features = ["midi-io"]
 
 [[example]]
+name = "read_patch"
+required-features = ["midi-io"]
+
+[[example]]
 name = "export_midi"
