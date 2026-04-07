@@ -65,7 +65,10 @@ fn print_apply_patch_params(s: &SynthParams) {
     println!("    s.lfo_int = {};", s.lfo_int);
     println!("    s.lfo_target = {:?};", s.lfo_target);
     println!("    s.mod_fx_on = {};", s.mod_fx_on);
-    println!("    s.mod_fx_type = {};  // raw program value", s.mod_fx_type);
+    println!(
+        "    s.mod_fx_type = {};  // raw program value",
+        s.mod_fx_type
+    );
     println!("    s.delay_on = {};", s.delay_on);
     println!("    s.delay_sub_type = {:?};", s.delay_sub_type);
     println!("    s.delay_time = {};", s.delay_time);
@@ -140,20 +143,14 @@ fn print_setup_patch(s: &SynthParams) {
     println!("    xd.set_delay_on({})?;", s.delay_on);
     println!("    xd.set_delay_sub_type({:?})?;", s.delay_sub_type);
     println!("    xd.set_delay_time({})?;", raw_to_float(s.delay_time));
-    println!(
-        "    xd.set_delay_depth({})?;",
-        raw_to_float(s.delay_depth)
-    );
+    println!("    xd.set_delay_depth({})?;", raw_to_float(s.delay_depth));
     println!(
         "    xd.set_delay_dry_wet({})?;",
         raw_to_float(s.delay_dry_wet)
     );
     println!("    xd.set_reverb_on({})?;", s.reverb_on);
     println!("    xd.set_reverb_sub_type({:?})?;", s.reverb_sub_type);
-    println!(
-        "    xd.set_reverb_time({})?;",
-        raw_to_float(s.reverb_time)
-    );
+    println!("    xd.set_reverb_time({})?;", raw_to_float(s.reverb_time));
     println!(
         "    xd.set_reverb_depth({})?;",
         raw_to_float(s.reverb_depth)

@@ -12,7 +12,7 @@ use minilogue_xd::device;
 use minilogue_xd::message::U4;
 use minilogue_xd::sysex::frame::{self, parse_sysex};
 use minilogue_xd::sysex::program::{self, ProgramData};
-use minilogue_xd::transport::{MidirInput, MidiInput, MidirOutput, MidiOutput};
+use minilogue_xd::transport::{MidiInput, MidiOutput, MidirInput, MidirOutput};
 
 /// Compare two stored program slots byte-by-byte.
 fn compare_programs(
@@ -25,8 +25,7 @@ fn compare_programs(
     use minilogue_xd::sysex::program::ProgramNumber;
     use minilogue_xd::sysex::transaction::SysexTransaction;
 
-    let mut tx = SysexTransaction::new(output, input, channel)
-        .with_timeout(Duration::from_secs(5));
+    let mut tx = SysexTransaction::new(output, input, channel).with_timeout(Duration::from_secs(5));
 
     println!("Reading program {}...", slot_a);
     let data_a = tx.request_program(ProgramNumber::new(slot_a)?)?;
@@ -143,7 +142,11 @@ fn main() -> minilogue_xd::Result<()> {
     let mut diffs = 0;
     for (i, (orig, reser)) in original_bytes.iter().zip(reserialized.iter()).enumerate() {
         if orig != reser {
-            let region = if i < 156 { "SynthParams" } else { "SequencerParams" };
+            let region = if i < 156 {
+                "SynthParams"
+            } else {
+                "SequencerParams"
+            };
             let offset = if i < 156 { i } else { i - 156 };
             println!(
                 "  DIFF at byte {:4} ({} offset {:3}): original=0x{:02X} ({:3}), reserialized=0x{:02X} ({:3})",
@@ -154,15 +157,25 @@ fn main() -> minilogue_xd::Result<()> {
     }
 
     if diffs == 0 {
-        println!("\n=== PERFECT ROUND-TRIP: all {} bytes match ===", original_bytes.len());
+        println!(
+            "\n=== PERFECT ROUND-TRIP: all {} bytes match ===",
+            original_bytes.len()
+        );
     } else {
-        println!("\n=== {} bytes differ out of {} ===", diffs, original_bytes.len());
+        println!(
+            "\n=== {} bytes differ out of {} ===",
+            diffs,
+            original_bytes.len()
+        );
     }
 
     // Also try re-encoding as SysEx and compare the full message
     let rebuilt_sysex = program::build_current_program_dump(channel, &program);
     if raw_sysex == rebuilt_sysex {
-        println!("Full SysEx message also matches ({} bytes)", raw_sysex.len());
+        println!(
+            "Full SysEx message also matches ({} bytes)",
+            raw_sysex.len()
+        );
     } else {
         println!(
             "Full SysEx message differs: original {} bytes, rebuilt {} bytes",

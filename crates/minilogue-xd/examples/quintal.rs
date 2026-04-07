@@ -625,7 +625,10 @@ fn save(slot: Option<u16>) -> Result<(), Box<dyn Error>> {
         tx.send_program(program, &data)?;
         println!("Done! Select program {:03} on the XD to load it.", slot + 1);
     } else {
-        println!("Loading \"{}\" into current edit buffer...", data.synth.name);
+        println!(
+            "Loading \"{}\" into current edit buffer...",
+            data.synth.name
+        );
         tx.send_current_program(&data)?;
         println!("Done! The patch is now active — play some keys.");
         println!("To keep it, WRITE to a program slot on the XD (SHIFT + key).");

@@ -171,8 +171,7 @@ impl ProgramData {
 
         if let Some(ref raw) = self.raw_blob {
             // Use original blob bytes as the base for both sections.
-            let synth_base: &[u8; SynthParams::SIZE] =
-                raw[..SynthParams::SIZE].try_into().unwrap();
+            let synth_base: &[u8; SynthParams::SIZE] = raw[..SynthParams::SIZE].try_into().unwrap();
             let synth_bytes = self.synth.to_bytes_with_base(synth_base);
             out.extend_from_slice(&synth_bytes);
 
