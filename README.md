@@ -4,7 +4,7 @@
 [![][tag-badge]][tag]
 [![Crates.io](https://img.shields.io/crates/v/minilogue-xd)](https://crates.io/crates/minilogue-xd)
 [![Docs.rs](https://img.shields.io/docsrs/minilogue-xd)](https://docs.rs/minilogue-xd)
-[![MIT / Apache-2.0](https://img.shields.io/crates/l/minilogue-xd)](LICENSE)
+[![MIT / Apache-2.0](https://img.shields.io/crates/l/minilogue-xd?v=2)](LICENSE)
 
 [![][logo]][logo-large]
 
