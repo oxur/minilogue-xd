@@ -31,7 +31,6 @@ use minilogue_xd::device;
 use minilogue_xd::message::{U4, U7};
 use minilogue_xd::midi_file::MidiFileBuilder;
 use minilogue_xd::param::enums::*;
-use minilogue_xd::param::SteppedParam;
 use minilogue_xd::sysex::program::SynthParams;
 use minilogue_xd::theory::note::{Note, Pitch, PitchSymbol};
 use minilogue_xd::transport::MidirOutput;
@@ -408,7 +407,7 @@ fn setup_patch(xd: &mut RealtimeController<MidirOutput>) -> minilogue_xd::Result
     xd.set_vco1_level(0.75)?;
     xd.set_vco2_level(0.65)?;
 
-    // No sync, no ring — clean and open (unlike Replicant xd's brass)
+    // No sync, no ring — clean and open
     xd.set_sync(Sync::Off)?;
     xd.set_ring(Ring::Off)?;
 
@@ -610,7 +609,7 @@ fn save(_slot: Option<u16>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// Apply our crystalline patch settings to an existing SynthParams.
+/// Apply our patch settings to an existing SynthParams (raw 10-bit values).
 fn apply_patch_params(s: &mut SynthParams) {
     use minilogue_xd::sysex::program::ProgramName;
     s.name = ProgramName::from_string("Quintal xd").unwrap();
@@ -645,7 +644,7 @@ fn apply_patch_params(s: &mut SynthParams) {
     s.lfo_int = 123;
     s.lfo_target = LfoTarget::Cutoff;
     s.mod_fx_on = true;
-    s.mod_fx_type = ModFxType::Chorus.to_program_value();
+    s.mod_fx_type = 0; // Chorus (raw program value)
     s.delay_on = true;
     s.delay_sub_type = DelaySubType::Stereo;
     s.delay_time = 460;
