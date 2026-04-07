@@ -19,6 +19,66 @@ synthesizer through the `minilogue-xd` Rust library. It covers the synth's
 signal flow, parameter relationships, classic sound design patterns, and
 idiomatic library usage — enabling expert-level patch creation and sequencing.
 
+## How the Library Design Guides Sound Design
+
+The `minilogue-xd` library isn't just an API — its type system is a
+**reasoning framework** for sound design. Understanding this makes the
+difference between "set CC 43 to some value" and "I know exactly what
+the filter is doing."
+
+### Types as Domain Knowledge
+
+| Design choice | What it teaches you |
+|---------------|-------------------|
+| `VcoWave` has 3 variants (`Sqr`, `Tri`, `Saw`) | These are the *only* oscillator shapes — you know the full sonic palette |
+| `set_cutoff(f32)` takes 0.0–1.0 | You always know where you are in the filter's range without memorizing CC 43's 10-bit encoding |
+| `VcoOctave` has 4 variants (`Sixteen`, `Eight`, `Four`, `Two`) | The register choices are discrete — there's no "5 foot" octave to wonder about |
+| `DelaySubType` has 20 variants | You can browse *every* delay algorithm the XD offers by reading the enum |
+| `SteppedParam` trait with `to_tx_value()` | Each enum carries its own wire encoding — you never need to look up magic numbers |
+| `EgTarget` = `Cutoff \| Pitch2 \| Pitch` | The envelope can only go to three places — this constrains and guides modulation routing |
+| `PatchBuilder` methods clamp floats | You can't accidentally set an invalid value — the builder is forgiving, so you can experiment freely |
+| `SynthParams` fields are `pub` | You can inspect *every* parameter of a patch — the struct IS the synth state |
+
+### The Layered Architecture as Mental Model
+
+The library's 4-layer architecture mirrors how you should think about
+building a sound:
+
+```
+Layer 4: Builder / Controller  →  "What sound do I want?"
+Layer 3: SysEx / Program       →  "What's the full synth state?"
+Layer 2: Parameters / Enums    →  "What are the individual controls?"
+Layer 1: Messages / Codec      →  "How do bytes move on the wire?"
+```
+
+When designing sounds, work top-down: start with the Builder (Layer 4)
+to sketch the patch, then drop to the Controller (Layer 4) to tweak in
+real time, and only go to Layer 2/3 when you need to understand the
+raw parameter values or inspect a program blob.
+
+### Float Ranges as Musical Intuition
+
+The library consistently uses 0.0–1.0 for continuous parameters. This
+builds intuition:
+
+- **0.0** = fully closed / off / minimum
+- **0.5** = center / neutral / moderate
+- **1.0** = fully open / on / maximum
+
+So `set_cutoff(0.35)` immediately reads as "slightly below center —
+a bit dark." `set_resonance(0.45)` reads as "just below halfway —
+musical, not squealing." `set_lfo_rate(0.05)` reads as "near minimum —
+very slow evolution." You never need to think about the 0–1023 raw
+range; the float IS the musical intent.
+
+### Enums Prevent Impossible States
+
+You can't accidentally set a delay type that doesn't exist, or an
+oscillator wave the hardware doesn't support. The type system makes
+invalid patches unrepresentable. This is especially valuable when
+exploring: iterate over `DelaySubType` variants and you've tried
+every delay the XD has. No more wondering "is there another option?"
+
 ## When to Use This Skill
 
 Activate when the task involves:
