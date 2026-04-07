@@ -97,22 +97,49 @@ impl<'a, O: MidiOutput, I: MidiInput> SysexTransaction<'a, O, I> {
     /// (current program, global, tuning). It is *not* suitable for stored
     /// program dumps, which have the program number outside the encoded
     /// payload.
-    /// Receive the next SysEx message, skipping over realtime messages
-    /// (clock F8, active sensing FE, etc.) that the synth may interleave.
+    /// Receive the next complete SysEx message, skipping realtime messages
+    /// (clock F8, active sensing FE, etc.) and reassembling fragmented
+    /// SysEx if the MIDI driver delivers it in pieces.
     fn receive_sysex(&mut self) -> Result<Vec<u8>> {
         let deadline = std::time::Instant::now() + self.timeout;
+        let mut buf: Vec<u8> = Vec::new();
+
         loop {
             let remaining = deadline.saturating_duration_since(std::time::Instant::now());
             if remaining.is_zero() {
                 return Err(SysexError::Timeout(self.timeout).into());
             }
-            match self.input.receive(remaining)? {
-                Some(bytes) if bytes.first() == Some(&0xF0) && bytes.last() == Some(&0xF7) => {
-                    return Ok(bytes)
-                }
-                Some(_) => continue, // skip clock, active sensing, partial fragments
+
+            let bytes = match self.input.receive(remaining)? {
+                Some(b) => b,
                 None => return Err(SysexError::Timeout(self.timeout).into()),
+            };
+
+            // Complete SysEx in one message — the happy path.
+            if bytes.first() == Some(&0xF0) && bytes.last() == Some(&0xF7) && buf.is_empty() {
+                return Ok(bytes);
             }
+
+            // Start of a fragmented SysEx.
+            if bytes.first() == Some(&0xF0) && bytes.last() != Some(&0xF7) {
+                buf = bytes;
+                continue;
+            }
+
+            // Continuation of a fragmented SysEx — append non-realtime bytes.
+            if !buf.is_empty() {
+                // Filter out interleaved realtime bytes (F8, FE, etc.)
+                for &b in &bytes {
+                    buf.push(b);
+                }
+                // Check if we now have a complete message.
+                if buf.last() == Some(&0xF7) {
+                    return Ok(buf);
+                }
+                continue;
+            }
+
+            // Not SysEx, buffer empty — skip (clock, active sensing, etc.)
         }
     }
 
