@@ -257,7 +257,7 @@ cargo run -p minilogue-xd --example berlin_school
 ```
 crates/
   minilogue-xd/   — Core library (this crate)
-  minilogue/       — Umbrella crate re-exporting all Minilogue variants
+  minilogue/      — Umbrella crate re-exporting all Minilogue variants
 ```
 
 ---
