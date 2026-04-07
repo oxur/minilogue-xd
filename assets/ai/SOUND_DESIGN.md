@@ -301,10 +301,13 @@ let vel = (step.vel as f32 * vel_scale).round() as u8;
 
 ```rust
 use minilogue_xd::controller::RealtimeController;
+use minilogue_xd::device;
 use minilogue_xd::transport::MidirOutput;
 use minilogue_xd::message::{U4, U7};
 
-let output = MidirOutput::connect("minilogue xd SOUND")?;
+let port = device::find_output_port()?
+    .expect("Minilogue XD not found");
+let output = MidirOutput::connect(&port)?;
 let mut xd = RealtimeController::new(output, U4::new(0)?);
 
 xd.set_cutoff(0.6)?;           // float 0.0–1.0 → 10-bit
@@ -312,8 +315,8 @@ xd.set_vco1_wave(VcoWave::Saw)?; // typed enum
 xd.play_note(U7::new(60)?, U7::new(100)?)?;
 ```
 
-**Important:** Use the "SOUND" port, not "MIDI OUT" — SOUND goes directly
-to the synth engine.
+**Note:** `find_output_port()` prefers the "SOUND" port (direct to the
+synth engine) over "MIDI OUT".
 
 ### Building Patches Programmatically
 
